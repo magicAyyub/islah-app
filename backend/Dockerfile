@@ -1,13 +1,18 @@
-FROM node:14
+# Utilise l'image Python 3.9 comme base
+FROM python:3.12
 
-WORKDIR /usr/src/app
+# Crée un répertoire de travail dans le conteneur
+WORKDIR /backend
 
-COPY package*.json ./
+# Copie les fichiers requirements.txt dans le répertoire de travail
+COPY requirements.txt .
 
-RUN npm install
+# Installe les dépendances du projet
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
 
+# Copie tout le reste du projet dans le conteneur
 COPY . .
 
-EXPOSE 3000
-
-CMD ["npm", "start"]
+# Exécute le serveur via le fichier main.py
+CMD ["python", "-m", "app.main"]

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "@/hooks/use-toast"
 import { motion } from "framer-motion"
+import NoData from "@/components/ui/NoData"
 
 const fadeIn = {
   hidden: { opacity: 0 },
@@ -28,21 +29,21 @@ export default function ClassesPage() {
   const [newClass, setNewClass] = useState<Classe>({ name: "", teacher: "", capacity: 0, registered: 0 })
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
-  useEffect(() => {
-    const fetchClasses = async () => {
-      try {
-        const response = await fetch("/api/classes")
-        if (!response.ok) throw new Error("Erreur lors de la récupération des classes.")
-        const data = await response.json()
-        setClasses(data)
-      } catch (error) {
-        console.error(error)
-        toast({ title: "Erreur", description: "Une erreur est survenue lors de la récupération des classes." })
-      }
+  const loadClasses = useCallback(async () => {
+    try {
+      const response = await fetch("/api/classes")
+      if (!response.ok) throw new Error("Erreur lors de la récupération des classes.")
+      const data = await response.json()
+      setClasses(data)
+    } catch (error) {
+      console.error(error)
+      toast({ title: "Erreur", description: "Une erreur est survenue lors de la récupération des classes." })
     }
-
-    fetchClasses()
   }, [])
+
+  useEffect(() => {
+    loadClasses()
+  }, [loadClasses])
 
   const handleAddClass = async () => {
     try {
@@ -137,32 +138,36 @@ export default function ClassesPage() {
               </DialogContent>
             </Dialog>
           </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nom</TableHead>
-                <TableHead>Enseignant</TableHead>
-                <TableHead>Capacité</TableHead>
-                <TableHead>Inscrits</TableHead>
-                <TableHead>Places Disponibles</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {classes.map((classe) => (
-                <TableRow key={classe.id}>
-                  <TableCell className="font-medium">{classe.name}</TableCell>
-                  <TableCell>{classe.teacher}</TableCell>
-                  <TableCell>{classe.capacity}</TableCell>
-                  <TableCell>{classe.registered}</TableCell>
-                  <TableCell>
-                    <span className={classe.capacity - classe.registered > 5 ? "text-green-600" : "text-red-600"}>
-                      {classe.capacity - classe.registered}
-                    </span>
-                  </TableCell>
+          {classes.length === 0 ? (
+            <NoData message="Aucune classe n'a été trouvée." onRetry={loadClasses} />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nom</TableHead>
+                  <TableHead>Enseignant</TableHead>
+                  <TableHead>Capacité</TableHead>
+                  <TableHead>Inscrits</TableHead>
+                  <TableHead>Places Disponibles</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {classes.map((classe) => (
+                  <TableRow key={classe.id}>
+                    <TableCell className="font-medium">{classe.name}</TableCell>
+                    <TableCell>{classe.teacher}</TableCell>
+                    <TableCell>{classe.capacity}</TableCell>
+                    <TableCell>{classe.registered}</TableCell>
+                    <TableCell>
+                      <span className={classe.capacity - classe.registered > 5 ? "text-green-600" : "text-red-600"}>
+                        {classe.capacity - classe.registered}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </motion.div>

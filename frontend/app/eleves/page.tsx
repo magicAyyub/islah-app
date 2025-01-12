@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
+import NoData from "@/components/ui/NoData"
 
 type Student = {
   id?: number;
@@ -122,7 +123,7 @@ export default function StudentsPage() {
   }, [searchParams, loadStudents]);
 
   const handleSearch = () => {
-    router.push(`/students?search=${searchTerm}`)
+    router.push(`/api/students?search=${searchTerm}`)
     loadStudents(searchTerm)
   }
 
@@ -284,28 +285,32 @@ export default function StudentsPage() {
       {isLoading ? (
         <div>Chargement...</div>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nom</TableHead>
-              <TableHead>Prénom</TableHead>
-              <TableHead>Classe</TableHead>
-              <TableHead>Date de naissance</TableHead>
-              <TableHead>Date d&apos;inscription</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {students.map((student) => (
-              <StudentRow 
-                key={student.id} 
-                student={student} 
-                onReinscription={handleReinscription}
-                onRenvoi={handleRenvoi}
-              />
-            ))}
-          </TableBody>
-        </Table>
+        students.length === 0 ? (
+          <NoData message="Aucun élève n'a été trouvé." onRetry={() => loadStudents(searchTerm)} />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nom</TableHead>
+                <TableHead>Prénom</TableHead>
+                <TableHead>Classe</TableHead>
+                <TableHead>Date de naissance</TableHead>
+                <TableHead>Date d&apos;inscription</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {students.map((student) => (
+                <StudentRow 
+                  key={student.id} 
+                  student={student} 
+                  onReinscription={handleReinscription}
+                  onRenvoi={handleRenvoi}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        )
       )}
     </div>
   )

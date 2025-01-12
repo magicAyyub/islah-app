@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
+import NoData from "@/components/ui/NoData"
 
 type Parent = {
   id: number;
@@ -111,7 +112,7 @@ export default function ParentsPage() {
   }, [searchParams, loadParents])
 
   const handleSearch = () => {
-    router.push(`/parents?search=${searchTerm}`)
+    router.push(`/api/parents?search=${searchTerm}`)
     loadParents(searchTerm)
   }
 
@@ -213,27 +214,31 @@ export default function ParentsPage() {
       {isLoading ? (
         <div>Chargement...</div>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nom</TableHead>
-              <TableHead>Prénom</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Téléphone</TableHead>
-              <TableHead>Date d&apos;inscription</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {parents.map((parent) => (
-              <ParentRow 
-                key={parent.id} 
-                parent={parent} 
-                onEdit={handleEdit}
-              />
-            ))}
-          </TableBody>
-        </Table>
+        parents.length === 0 ? (
+          <NoData message="Aucun parent n'a été trouvé." onRetry={() => loadParents(searchTerm)} />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nom</TableHead>
+                <TableHead>Prénom</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Téléphone</TableHead>
+                <TableHead>Date d&apos;inscription</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {parents.map((parent) => (
+                <ParentRow 
+                  key={parent.id} 
+                  parent={parent} 
+                  onEdit={handleEdit}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        )
       )}
     </div>
   )

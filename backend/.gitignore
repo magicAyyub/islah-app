@@ -1,41 +1,28 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# ignore d'un projet fastapi
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
+__pycache__
 
-# testing
-/coverage
+# ignore de l'environnement virtuel
+venv/
+env/
+ENV/
+.env
 
-# next.js
-/.next/
-/out/
+# ignore des fichiers de configuration
+*.pyc
+*.pyo
+*.pyd
+*.pyw
+*.pyz
+*.pyz.asc
+*.pyz.asc.sig
+*.pyz.sig
+*.pyz.sig.asc
 
-# production
-/build
+# ignore des fichiers de cache
+*.cache
+*.log
+*.log.*
+*.log-*
+*.log/*
 
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
