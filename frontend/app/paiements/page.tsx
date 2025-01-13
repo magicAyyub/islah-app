@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Table, TableBody, TableCell, TableHead, TableHeader } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/hooks/use-toast"
 import { motion } from "framer-motion"
 import NoData from "@/components/ui/NoData"
+import AnimatedTableRow from "@/components/AnimatedTableRow"
 
 const fadeIn = {
   hidden: { opacity: 0 },
@@ -18,17 +19,17 @@ const fadeIn = {
 }
 
 type Payment = {
-  id: number;
-  eleve: string;
-  classe: string;
-  montant: number;
+  id?: number;
+  student_id: string;
+  class_id: string;
+  amount: number;
   date: string;
-  statut: string;
+  status: string;
 }
 
 export default function PaiementsPage() {
   const [payments, setPayments] = useState<Payment[]>([])
-  const [newPayment, setNewPayment] = useState({ eleve: "", classe: "", montant: "", date: "", statut: "" })
+  const [newPayment, setNewPayment] = useState({ student_id: "", class_id: "", amount: "", date: "", status: "" })
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   const loadPayments = useCallback(async () => {
@@ -36,6 +37,7 @@ export default function PaiementsPage() {
       const response = await fetch(`/api/payments`)
       if (!response.ok) throw new Error('Erreur lors du chargement des paiements')
       const data: Payment[] = await response.json()
+      console.log(data)
       setPayments(data)
     } catch (error) {
       console.error('Erreur:', error)
@@ -58,22 +60,17 @@ export default function PaiementsPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          eleve: newPayment.eleve,
-          classe: newPayment.classe,
-          montant: parseFloat(newPayment.montant),
-          date: newPayment.date,
-          statut: newPayment.statut,
-        }),
+        body: JSON.stringify({...newPayment, amount: Number(newPayment.amount)}),
       })
       if (!response.ok) throw new Error('Erreur lors de l\'ajout du paiement')
       const addedPayment: Payment = await response.json()
       setPayments([addedPayment, ...payments])
-      setNewPayment({ eleve: "", classe: "", montant: "", date: "", statut: "" })
+      setNewPayment({ student_id: "", class_id: "", amount: "", date: "", status: "" })
       setIsDialogOpen(false)
       toast({
         title: "Paiement enregistré",
-        description: `Le paiement pour ${newPayment.eleve} a été enregistré avec succès.`,
+        // TODO: Mettre le nom de l'élève au lieu de l'id
+        description: `Le paiement pour ${newPayment.student_id} a été enregistré avec succès.`,
       })
     } catch (error) {
       console.error('Erreur:', error)
@@ -111,40 +108,58 @@ export default function PaiementsPage() {
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="eleve" className="text-right">Élève</Label>
-                    <Input
-                      id="eleve"
-                      value={newPayment.eleve}
-                      onChange={(e) => setNewPayment({ ...newPayment, eleve: e.target.value })}
-                      className="col-span-3"
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="classe" className="text-right">Classe</Label>
-                    <Select onValueChange={(value) => setNewPayment({ ...newPayment, classe: value })}>
+                    {/* TODO: Logic à remplacer  avec une recherche en temps réel avec l'input */}
+                    <Label htmlFor="student_id" className="text-right">Élève</Label>        
+                    <Select 
+                    name="student_id"
+                    id="student_id"
+                    onValueChange={(value) => setNewPayment({ ...newPayment, student_id: value })}
+                    >
                       <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="Sélectionnez une classe" />
+                        <SelectValue placeholder="Sélectionnez un élève" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="CP">CP</SelectItem>
-                        <SelectItem value="CE1">CE1</SelectItem>
-                        <SelectItem value="CE2">CE2</SelectItem>
-                        <SelectItem value="CM1">CM1</SelectItem>
-                        <SelectItem value="CM2">CM2</SelectItem>
+                        <SelectItem value="1">Elève 1</SelectItem>
+                        <SelectItem value="2">Élève 2</SelectItem>
+                        <SelectItem value="3">Élève 3</SelectItem>
+                        <SelectItem value="4">Élève 4</SelectItem>
+                        <SelectItem value="5">Élève 5</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="montant" className="text-right">Montant</Label>
+                    {/* TODO: Remplacer cette logique en cherchant la liste via l'api  */}
+                    <Label htmlFor="class_id" className="text-right">Classe</Label>
+                    <Select 
+                    name="class_id"
+                    id="class_id"
+                    value={newPayment.class_id}
+                    onValueChange={(value) => setNewPayment({ ...newPayment, class_id: value })}>
+                      <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="Sélectionnez une classe" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">CP</SelectItem>
+                        <SelectItem value="2">CE1</SelectItem>
+                        <SelectItem value="3">CE2</SelectItem>
+                        <SelectItem value="4">CM1</SelectItem>
+                        <SelectItem value="5">CM2</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="amount" className="text-right">Montant</Label>
                     <Input
-                      id="montant"
+                      id="amount"
+                      name="amount"
                       type="number"
                       value={newPayment.montant}
-                      onChange={(e) => setNewPayment({ ...newPayment, montant: e.target.value })}
+                      onChange={(e) => setNewPayment({ ...newPayment, amount: e.target.value })}
                       className="col-span-3"
                     />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
+                    {/* TODO: à revoir car inutile  */}
                     <Label htmlFor="date" className="text-right">Date</Label>
                     <Input
                       id="date"
@@ -155,8 +170,12 @@ export default function PaiementsPage() {
                     />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="statut" className="text-right">Statut</Label>
-                    <Select onValueChange={(value) => setNewPayment({ ...newPayment, statut: value })}>
+                    {/* TODO: à revoir car inutile  */}
+                    <Label htmlFor="status" className="text-right">Statut</Label>
+                    <Select 
+                    name="status"
+                    id="status"
+                    onValueChange={(value) => setNewPayment({ ...newPayment, status: value })}>
                       <SelectTrigger className="col-span-3">
                         <SelectValue placeholder="Sélectionnez un statut" />
                       </SelectTrigger>
@@ -179,31 +198,31 @@ export default function PaiementsPage() {
           ) : (
             <Table>
               <TableHeader>
-                <TableRow>
+                <AnimatedTableRow>
                   <TableHead>Élève</TableHead>
                   <TableHead>Classe</TableHead>
                   <TableHead>Montant</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Statut</TableHead>
-                </TableRow>
+                </AnimatedTableRow>
               </TableHeader>
               <TableBody>
-                {payments.map((payment) => (
-                  <TableRow key={payment.id}>
-                    <TableCell className="font-medium">{payment.eleve}</TableCell>
-                    <TableCell>{payment.classe}</TableCell>
-                    <TableCell>{payment.montant} €</TableCell>
+                {payments.map((payment, index) => (
+                  <AnimatedTableRow key={payment.id} delay={index * 0.05}>
+                    <TableCell className="font-medium">{payment.student_id}</TableCell>
+                    <TableCell>{payment.class_id}</TableCell>
+                    <TableCell>{payment.amount} €</TableCell>
                     <TableCell>{payment.date}</TableCell>
                     <TableCell>
                       <span className={
-                        payment.statut === "Payé" ? "text-green-600" :
-                        payment.statut === "En attente" ? "text-yellow-600" :
+                        payment.status === "Payé" ? "text-green-600" :
+                        payment.status === "En attente" ? "text-yellow-600" :
                         "text-red-600"
                       }>
-                        {payment.statut}
+                        {payment.status}
                       </span>
                     </TableCell>
-                  </TableRow>
+                  </AnimatedTableRow>
                 ))}
               </TableBody>
             </Table>

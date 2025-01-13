@@ -10,15 +10,8 @@ class StudentModel(BaseModel):
     first_name: str
     class_id: int
     birth_date: date
-    registration_date: str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    registration_date: datetime = datetime.now() 
 
-    @validator('registration_date')
-    def validate_registration_date(cls, v):
-        try:
-            datetime.strptime(v, "%Y-%m-%d %H:%M:%S")
-        except ValueError:
-            raise ValueError("registration_date must be in the format YYYY-MM-DD HH:MM:SS")
-        return v
 
 class StudentResponse(BaseModel):
     id: int
@@ -26,7 +19,13 @@ class StudentResponse(BaseModel):
     first_name: str
     class_id: int
     birth_date: date
-    registration_date: str 
+    registration_date: datetime 
+
+    class Config:
+        from_attributes = True  # This enables ORM mode
+        json_encoders = {
+            datetime: lambda v: v.strftime("%Y-%m-%d %H:%M:%S")
+        }
 
 router = APIRouter(
     tags=["Students"]
@@ -38,7 +37,46 @@ db_dependency = Depends(get_db)
 async def get_students(db: Session = db_dependency) -> list[StudentResponse]:
     """Get all students."""
     students = db.query(Student).all()
-    print(students)
-    # if not students:
-    #     raise HTTPException(status_code=404, detail="No students found")
+    if students is None:
+        raise HTTPException(status_code=404, detail="No students found")
     return students
+
+@router.get("/api/students/{student_id}")
+async def get_student(student_id: int, db: Session = db_dependency) -> StudentResponse:
+    """Get a student by id."""
+    student = db.query(Student).filter(Student.id == student_id).first()
+    if student is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+    return student
+
+@router.post("/api/students")
+async def create_student(student: StudentModel, db: Session = db_dependency) -> StudentResponse:
+    """Create a student."""
+    student = Student(**student.dict())
+    db.add(student)
+    db.commit()
+    db.refresh(student)
+    return student
+
+@router.put("/api/students/{student_id}")
+async def update_student(student_id: int, student: StudentModel, db: Session = db_dependency) -> StudentResponse:
+    """Update a student."""
+    student = db.query(Student).filter(Student.id == student_id).first()
+    if student is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+    for key, value in student.dict().items():
+        if key in student.dict():
+            setattr(student, key, value)
+    db.commit()
+    db.refresh(student)
+    return student
+
+@router.delete("/api/students/{student_id}")
+async def delete_student(student_id: int, db: Session = db_dependency) -> dict[str, str]:
+    """Delete a student."""
+    student = db.query(Student).filter(Student.id == student_id).first()
+    if student is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+    db.delete(student)
+    db.commit()
+    return {"message": "Student deleted successfully"}

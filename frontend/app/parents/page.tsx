@@ -9,19 +9,26 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import NoData from "@/components/ui/NoData"
+import AnimatedTableRow from "@/components/AnimatedTableRow"
 
 type Parent = {
-  id: number;
-  nom: string;
-  prenom: string;
+  id?: number;
+  last_name: string;
+  first_name: string;
   email: string;
-  telephone: string;
-  dateInscription: string;
+  phone: string;
+  registration_date: string;
 }
 
-const ParentRow = ({ parent, onEdit }: { parent: Parent; onEdit: (parent: Parent) => void }) => {
+const ParentRow = ({ parent, onEdit, index }: { parent: Parent; onEdit: (parent: Parent) => void; index: number }) => {
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [editedParent, setEditedParent] = useState(parent)
+  const mapping_keys = {
+    "last_name": "Nom",
+    "first_name": "Prénom",
+    "email": "Email",
+    "phone": "Téléphone",
+  }
 
   const handleEdit = () => {
     onEdit(editedParent)
@@ -29,12 +36,12 @@ const ParentRow = ({ parent, onEdit }: { parent: Parent; onEdit: (parent: Parent
   }
 
   return (
-    <TableRow key={parent.id}>
-      <TableCell>{parent.nom}</TableCell>
-      <TableCell>{parent.prenom}</TableCell>
+    <AnimatedTableRow key={parent.id} delay={index * 0.05}>
+      <TableCell>{parent.last_name}</TableCell>
+      <TableCell>{parent.first_name}</TableCell>
       <TableCell>{parent.email}</TableCell>
-      <TableCell>{parent.telephone}</TableCell>
-      <TableCell>{new Date(parent.dateInscription).toLocaleDateString()}</TableCell>
+      <TableCell>{parent.phone}</TableCell>
+      <TableCell>{parent.registration_date}</TableCell>
       <TableCell>
         <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
           <DialogTrigger asChild>
@@ -49,10 +56,10 @@ const ParentRow = ({ parent, onEdit }: { parent: Parent; onEdit: (parent: Parent
             </DialogHeader>
             <div className="grid gap-4 py-4">
               {Object.entries(editedParent).map(([key, value]) => (
-                key !== 'id' && key !== 'dateInscription' && (
+                key !== 'id' && key !== 'registration_date' && (
                   <div key={key} className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor={key} className="text-right">
-                      {key.charAt(0).toUpperCase() + key.slice(1)}
+                      {mapping_keys[key]}
                     </Label>
                     <Input
                       id={key}
@@ -72,7 +79,7 @@ const ParentRow = ({ parent, onEdit }: { parent: Parent; onEdit: (parent: Parent
           </DialogContent>
         </Dialog>
       </TableCell>
-    </TableRow>
+    </AnimatedTableRow>
   )
 }
 
@@ -81,18 +88,34 @@ export default function ParentsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [newParent, setNewParent] = useState<Omit<Parent, 'id' | 'dateInscription'>>({ nom: '', prenom: '', email: '', telephone: '' })
+  const [newParent, setNewParent] = useState<Omit<Parent, 'id' | 'registration_date'>>({ last_name: '', first_name: '', email: '', phone: '' })
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
+  const mapping_keys = {
+    "last_name": "Nom",
+    "first_name": "Prénom",
+    "email": "Email",
+    "phone": "Téléphone",
+  }
 
   const loadParents = useCallback(async (search: string = "") => {
     setIsLoading(true)
     try {
-      const response = await fetch(`/api/parents?search=${search}`)
+      const response = await fetch(`/api/parents`)
       if (!response.ok) throw new Error('Erreur lors du chargement des parents')
-      const data = await response.json()
-      setParents(data)
+      const data: Parent[] = await response.json()
+    
+      if (search) {
+        const filteredParents = data.filter((parent) => (
+          parent.nom.toLowerCase().includes(search.toLowerCase()) ||
+          parent.prenom.toLowerCase().includes(search.toLowerCase()) ||
+          parent.email.toLowerCase().includes(search.toLowerCase()) ||
+          parent.telephone.includes(search)
+        ))
+        setParents(filteredParents)
+      }
+      setParents(data);
     } catch (error) {
       console.error('Erreur:', error)
       toast({
@@ -144,7 +167,7 @@ export default function ParentsPage() {
       const response = await fetch('/api/parents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newParent),
+        body: JSON.stringify({...newParent, registration_date: new Date().toISOString().split('T')[0]}),
       })
       if (!response.ok) throw new Error('Erreur lors de l\'ajout du parent')
       toast({
@@ -152,7 +175,7 @@ export default function ParentsPage() {
         description: `${newParent.prenom} ${newParent.nom} a été ajouté avec succès.`,
       })
       setIsAddDialogOpen(false)
-      setNewParent({ nom: '', prenom: '', email: '', telephone: '' })
+      setNewParent({ last_name: '', first_name: '', email: '', phone: '' })
       loadParents(searchTerm)
     } catch (error) {
       console.error('Erreur:', error)
@@ -192,7 +215,7 @@ export default function ParentsPage() {
               {Object.entries(newParent).map(([key, value]) => (
                 <div key={key} className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor={key} className="text-right">
-                    {key.charAt(0).toUpperCase() + key.slice(1)}
+                    {mapping_keys[key]}
                   </Label>
                   <Input
                     id={key}
@@ -229,11 +252,12 @@ export default function ParentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {parents.map((parent) => (
+              {parents.map((parent, index) => (
                 <ParentRow 
                   key={parent.id} 
                   parent={parent} 
                   onEdit={handleEdit}
+                  index={index}
                 />
               ))}
             </TableBody>

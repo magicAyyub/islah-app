@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { toast } from "@/hooks/use-toast"
 import { motion } from "framer-motion"
 import NoData from "@/components/ui/NoData"
+import AnimatedTableRow from "@/components/AnimatedTableRow"
 
 const fadeIn = {
   hidden: { opacity: 0 },
@@ -152,8 +153,8 @@ export default function ClassesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {classes.map((classe) => (
-                  <TableRow key={classe.id}>
+                {classes.map((classe, index) => (
+                  <AnimatedTableRow key={classe.id} delay={index * 0.05}>
                     <TableCell className="font-medium">{classe.name}</TableCell>
                     <TableCell>{classe.teacher}</TableCell>
                     <TableCell>{classe.capacity}</TableCell>
@@ -163,7 +164,7 @@ export default function ClassesPage() {
                         {classe.capacity - classe.registered}
                       </span>
                     </TableCell>
-                  </TableRow>
+                  </AnimatedTableRow>
                 ))}
               </TableBody>
             </Table>

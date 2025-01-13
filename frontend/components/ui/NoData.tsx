@@ -33,7 +33,7 @@ const NoData: FC<NoDataProps> = ({ message, onRetry }) => {
 
   return (
     <motion.div
-      className="flex flex-col items-center justify-center h-full p-4 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-lg shadow-inner"
+      className="flex flex-col items-center justify-center h-full p-4 "
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.5 }}

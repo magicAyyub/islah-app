@@ -48,7 +48,7 @@ class Payment(Base):
     class_id = Column(Integer, ForeignKey("classes.id"))
     amount = Column(DECIMAL(10, 2), nullable=False)
     date = Column(String(50), nullable=False)
-    status = Column(String(50), nullable=False)
+    status = Column(String, nullable=False, default="pending")
 
     student = relationship("Student", back_populates="payments")
     class_ = relationship("Class", back_populates="payments")

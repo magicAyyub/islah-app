@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import NoData from "@/components/ui/NoData"
+import AnimatedTableRow from "@/components/AnimatedTableRow"
 
 type Student = {
   id?: number;
@@ -20,12 +21,12 @@ type Student = {
   registration_date: string;
 }
 
-const StudentRow = ({ student, onReinscription, onRenvoi }: { student: Student; onReinscription: (student: Student) => void; onRenvoi: (student: Student) => void }) => {
+const StudentRow = ({ student, onReinscription, onRenvoi, index }: { student: Student; onReinscription: (student: Student) => void; onRenvoi: (student: Student) => void; index: number }) => {
   const [isReinscriptionOpen, setIsReinscriptionOpen] = useState(false)
   const [isRenvoiOpen, setIsRenvoiOpen] = useState(false)
 
   return (
-    <TableRow key={student.id}>
+    <AnimatedTableRow key={student.id} delay={index * 0.05}>
       <TableCell>{student.last_name}</TableCell>
       <TableCell>{student.first_name}</TableCell>
       <TableCell>{student.class_id}</TableCell>
@@ -75,7 +76,7 @@ const StudentRow = ({ student, onReinscription, onRenvoi }: { student: Student; 
           </Dialog>
         </div>
       </TableCell>
-    </TableRow>
+    </AnimatedTableRow>
   )
 }
 
@@ -96,14 +97,13 @@ export default function StudentsPage() {
       if (!response.ok) throw new Error('Erreur lors du chargement des élèves');
       const data: Student[] = await response.json();
 
-      const filteredStudents = search
-        ? data.filter(student => 
-            student.last_name.toLowerCase().includes(search.toLowerCase()) ||
-            student.first_name.toLowerCase().includes(search.toLowerCase())
-          )
-        : data;
-
-      setStudents(filteredStudents);
+      if (search) {
+        const filteredStudents = data.filter((student) => {
+          return student.first_name.toLowerCase().includes(search.toLowerCase()) || student.last_name.toLowerCase().includes(search.toLowerCase());
+        });
+        setStudents(filteredStudents);
+      }
+      setStudents(data);
     } catch (error) {
       console.error('Erreur:', error);
       toast({
@@ -247,7 +247,8 @@ export default function StudentsPage() {
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="class_id" className="text-right">Classe</Label>
                 <Select
-                name="class_id"
+                  name="class_id"
+                  id="class_id"
                   value={newStudent.class_id}
                   onValueChange={(value) => setNewStudent({ ...newStudent, class_id: value })}
                 >
@@ -300,12 +301,13 @@ export default function StudentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {students.map((student) => (
+              {students.map((student, index) => (
                 <StudentRow 
                   key={student.id} 
                   student={student} 
                   onReinscription={handleReinscription}
                   onRenvoi={handleRenvoi}
+                  index={index}
                 />
               ))}
             </TableBody>
