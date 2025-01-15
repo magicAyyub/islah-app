@@ -248,7 +248,6 @@ export default function StudentsPage() {
                 <Label htmlFor="class_id" className="text-right">Classe</Label>
                 <Select
                   name="class_id"
-                  id="class_id"
                   value={newStudent.class_id}
                   onValueChange={(value) => setNewStudent({ ...newStudent, class_id: value })}
                 >

@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
 from utils.database import get_db
 from utils.models import Parent
 from pydantic import BaseModel
 from datetime import datetime
+from typing import List
 
 class ParentModel(BaseModel):
     last_name: str
@@ -39,6 +40,12 @@ async def get_parents(db: Session = db_dependency) -> list[ParentResponse]:
     if not parents:
         raise HTTPException(status_code=404, detail="No parents found")
     return parents
+
+@router.get("/api/parents/search", response_model=List[ParentResponse])
+async def search_parent(q: str = Query(..., min_length=1), db: Session = db_dependency):
+    """Search for a student."""
+    students = db.query(Parent).filter(Parent.first_name.ilike(f"%{q}%") | Parent.last_name.ilike(f"%{q}%")).all()
+    return students
 
 @router.get("/api/parents/{parent_id}")
 async def get_parent(parent_id: int, db: Session = db_dependency) -> ParentResponse:

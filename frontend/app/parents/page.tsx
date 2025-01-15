@@ -23,7 +23,7 @@ type Parent = {
 const ParentRow = ({ parent, onEdit, index }: { parent: Parent; onEdit: (parent: Parent) => void; index: number }) => {
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [editedParent, setEditedParent] = useState(parent)
-  const mapping_keys = {
+  const mapping_keys: { [key in keyof Omit<Parent, 'id' | 'registration_date'>]: string } = {
     "last_name": "Nom",
     "first_name": "Prénom",
     "email": "Email",
@@ -49,7 +49,7 @@ const ParentRow = ({ parent, onEdit, index }: { parent: Parent; onEdit: (parent:
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Édition de {parent.prenom} {parent.nom}</DialogTitle>
+              <DialogTitle>Édition de {parent.first_name} {parent.last_name}</DialogTitle>
               <DialogDescription>
                 Modifiez les informations du parent ici.
               </DialogDescription>
@@ -59,7 +59,7 @@ const ParentRow = ({ parent, onEdit, index }: { parent: Parent; onEdit: (parent:
                 key !== 'id' && key !== 'registration_date' && (
                   <div key={key} className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor={key} className="text-right">
-                      {mapping_keys[key]}
+                      {mapping_keys[key as keyof typeof mapping_keys]}
                     </Label>
                     <Input
                       id={key}
@@ -108,10 +108,10 @@ export default function ParentsPage() {
     
       if (search) {
         const filteredParents = data.filter((parent) => (
-          parent.nom.toLowerCase().includes(search.toLowerCase()) ||
-          parent.prenom.toLowerCase().includes(search.toLowerCase()) ||
+          parent.last_name.toLowerCase().includes(search.toLowerCase()) ||
+          parent.first_name.toLowerCase().includes(search.toLowerCase()) ||
           parent.email.toLowerCase().includes(search.toLowerCase()) ||
-          parent.telephone.includes(search)
+          parent.phone.includes(search)
         ))
         setParents(filteredParents)
       }
@@ -149,7 +149,7 @@ export default function ParentsPage() {
       if (!response.ok) throw new Error('Erreur lors de la mise à jour')
       toast({
         title: "Mise à jour réussie",
-        description: `Les informations de ${parent.prenom} ${parent.nom} ont été mises à jour.`,
+        description: `Les informations de ${parent.first_name} ${parent.last_name} ont été mises à jour.`,
       })
       loadParents(searchTerm)
     } catch (error) {
@@ -172,7 +172,7 @@ export default function ParentsPage() {
       if (!response.ok) throw new Error('Erreur lors de l\'ajout du parent')
       toast({
         title: "Parent ajouté",
-        description: `${newParent.prenom} ${newParent.nom} a été ajouté avec succès.`,
+        description: `${newParent.first_name} ${newParent.last_name} a été ajouté avec succès.`,
       })
       setIsAddDialogOpen(false)
       setNewParent({ last_name: '', first_name: '', email: '', phone: '' })
@@ -215,7 +215,7 @@ export default function ParentsPage() {
               {Object.entries(newParent).map(([key, value]) => (
                 <div key={key} className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor={key} className="text-right">
-                    {mapping_keys[key]}
+                    {mapping_keys[key as keyof typeof mapping_keys]}
                   </Label>
                   <Input
                     id={key}
