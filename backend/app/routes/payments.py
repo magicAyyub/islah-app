@@ -1,80 +1,48 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
 from utils.database import get_db
 from utils.models import Payment
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional
+from utils import schemas, models
+from typing import Optional, List
+from datetime import date
 
-class PaymentModel(BaseModel):
-    student_id: int
-    class_id: int
-    amount: float
-    date: datetime = datetime.now()
-    status: str = "pending"  
 
-class PaymentResponse(BaseModel):
-    id: int
-    student_id: int
-    class_id: int
-    amount: float
-    date: datetime 
-    status: Optional[str] = "pending" 
-
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            datetime: lambda v: v.strftime("%Y-%m-%d %H:%M:%S")
-        }
 router = APIRouter(
     tags=["Payments"]
 )
 
 db_dependency = Depends(get_db)
 
-@router.get("/api/payments")
-async def get_payments(db: Session = db_dependency) -> list[PaymentResponse]:
-    """Get all payments."""
-    payments = db.query(Payment).all()
-    if not payments:
-        raise HTTPException(status_code=404, detail="No payments found")
-    return payments
+@router.get("/payments/", response_model=List[schemas.PaymentResponse])
+async def get_payments(
+    skip: int = 0,
+    limit: int = 100,
+    status: Optional[schemas.PaymentStatus] = None,
+    student_id: Optional[int] = None,
+    class_id: Optional[int] = None,
+    due_before: Optional[date] = None,
+    db: Session = Depends(get_db)
+):
+    query = db.query(models.Payment)
+    if status:
+        query = query.filter(models.Payment.status == status)
+    if student_id:
+        query = query.filter(models.Payment.student_id == student_id)
+    if class_id:
+        query = query.filter(models.Payment.class_id == class_id)
+    if due_before:
+        query = query.filter(models.Payment.due_date <= due_before)
+    return query.offset(skip).limit(limit).all()
 
-@router.get("/api/payments/{payment_id}")
-async def get_payment(payment_id: int, db: Session = db_dependency) -> PaymentResponse:
-    """Get a payment by id."""
-    payment = db.query(Payment).filter(Payment.id == payment_id).first()
-    if not payment:
-        raise HTTPException(status_code=404, detail="Payment not found")
-    return payment
-
-@router.post("/api/payments")
-async def create_payment(payment: PaymentModel, db: Session = db_dependency) -> PaymentResponse:
-    """Create a payment."""
-    payment = Payment(**payment.dict())
-    db.add(payment)
+@router.post("/payments/", response_model=schemas.PaymentResponse)
+async def create_payment(
+    payment: schemas.PaymentBase,
+    db: Session = Depends(get_db)
+):
+    db_payment = models.Payment(**payment.dict())
+    db.add(db_payment)
     db.commit()
-    db.refresh(payment)
-    return payment
-
-@router.put("/api/payments/{payment_id}")
-async def update_payment(payment_id: int, payment_data: PaymentModel, db: Session = db_dependency) -> PaymentResponse:
-    """Update a payment."""
-    payment = db.query(Payment).filter(Payment.id == payment_id).first()
-    if not payment:
-        raise HTTPException(status_code=404, detail="Payment not found")
-    for key, value in payment_data.dict(exclude_unset=True).items():
-        setattr(payment, key, value)
-    db.commit()
-    db.refresh(payment)
-    return payment
-
-@router.delete("/api/payments/{payment_id}")
-async def delete_payment(payment_id: int, db: Session = db_dependency) -> dict[str, str]:
-    """Delete a payment."""
-    payment = db.query(Payment).filter(Payment.id == payment_id).first()
-    if not payment:
-        raise HTTPException(status_code=404, detail="Payment not found")
-    db.delete(payment)
-    db.commit()
-    return {"message": "Payment deleted"}
+    db.refresh(db_payment)
+    return db_payment

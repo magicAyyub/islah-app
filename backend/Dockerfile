@@ -10,6 +10,7 @@ COPY requirements.txt .
 # Installe les dépendances du projet
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
+RUN pip install pydantic[email]
 
 # Copie tout le reste du projet dans le conteneur
 COPY . .
