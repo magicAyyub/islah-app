@@ -1,183 +1,156 @@
 from sqlalchemy import (
-    Boolean, Column, ForeignKey, Integer, String, DateTime, Date, 
-    DECIMAL, Text, Enum, Table, CheckConstraint, UniqueConstraint
+    Column, ForeignKey, Integer, String, Date,
+    Text, CheckConstraint, TIMESTAMP, Enum, Numeric, Time
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import enum
 from .database import Base
 
-# Enums for static values
-class PaymentStatus(str, enum.Enum):
-    pending = "pending"
-    completed = "completed"
-    failed = "failed"
-    refunded = "refunded"
+# Enum classes
+class RoleEnum(enum.Enum):
+    admin = "admin"
+    agent = "agent"
+    direction = "direction"
 
-class RelationType(str, enum.Enum):
-    mother = "mother"
+class GuardianRoleEnum(enum.Enum):
     father = "father"
+    mother = "mother"
     guardian = "guardian"
+
+class GenderEnum(enum.Enum):
+    male = "male"
+    female = "female"
     other = "other"
 
-class NotificationType(str, enum.Enum):
-    payment_due = "payment_due"
-    payment_overdue = "payment_overdue"
-    payment_received = "payment_received"
-    payment_failed = "payment_failed"
+class DayOfWeekEnum(enum.Enum):
+    monday = "monday"
+    tuesday = "tuesday"
+    wednesday = "wednesday"
+    thursday = "thursday"
+    friday = "friday"
+    saturday = "saturday"
+    sunday = "sunday"
 
-# Association table for student-parent relationship
-student_parents = Table(
-    'student_parents',
-    Base.metadata,
-    Column('student_id', Integer, ForeignKey('students.id', ondelete='CASCADE')),
-    Column('parent_id', Integer, ForeignKey('parents.id', ondelete='CASCADE')),
-    Column('relationship_type', Enum(RelationType), nullable=False),
-    Column('is_primary_contact', Boolean, default=False),
-    Column('created_at', DateTime, server_default=func.now())
-)
+class EnrollmentStatusEnum(enum.Enum):
+    active = "active"
+    completed = "completed"
+    withdrawn = "withdrawn"
 
-class Class(Base):
-    __tablename__ = "classes"
+class PaymentMethodEnum(enum.Enum):
+    cash = "cash"
+    card = "card"
+    transfer = "transfer"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(50), nullable=False)
-    teacher = Column(String(100), nullable=False)
-    description = Column(Text)
-    capacity = Column(Integer, nullable=False)
-    registered = Column(Integer, default=0)
-    start_date = Column(Date, nullable=False)
-    end_date = Column(Date, nullable=False)
-    created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+class NotificationTypeEnum(enum.Enum):
+    payment_reminder = "payment_reminder"
+    re_enrollment_reminder = "re_enrollment_reminder"
 
-    # Relationships
-    students = relationship("Student", back_populates="class_")
-    payments = relationship("Payment", back_populates="class_")
-    attendance_records = relationship("Attendance", back_populates="class_")
+class NotificationStatusEnum(enum.Enum):
+    pending = "pending"
+    sent = "sent"
 
-    # Constraints
-    __table_args__ = (
-        CheckConstraint('capacity > 0', name='check_positive_capacity'),
-        CheckConstraint('registered >= 0', name='check_positive_registered'),
-        CheckConstraint('registered <= capacity', name='check_capacity_not_exceeded'),
-        CheckConstraint('end_date >= start_date', name='check_valid_date_range'),
-    )
+# Models
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    first_name = Column(String(50), nullable=False)
+    last_name = Column(String(50), nullable=False)
+    email = Column(String(100), nullable=False)
+    password_hash = Column(Text, nullable=False)
+    role = Column(Enum(RoleEnum), nullable=False)
+    created_at = Column(TIMESTAMP, server_default=func.current_timestamp())
+
+class Guardian(Base):
+    __tablename__ = "guardians"
+
+    id = Column(Integer, primary_key=True, index=True)
+    first_name = Column(String(50), nullable=False)
+    last_name = Column(String(50), nullable=False)
+    role = Column(Enum(GuardianRoleEnum), nullable=False)
+    phone_number = Column(String(15), nullable=False)
+    email = Column(String(100))
+    created_at = Column(TIMESTAMP, server_default=func.current_timestamp())
+    
+    students = relationship("Student", secondary="student_guardians", back_populates="guardians")
 
 class Student(Base):
     __tablename__ = "students"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    last_name = Column(String(100), nullable=False)
-    first_name = Column(String(100), nullable=False)
-    class_id = Column(Integer, ForeignKey("classes.id", ondelete="SET NULL"))
-    birth_date = Column(Date, nullable=False)
-    registration_date = Column(DateTime, server_default=func.now())
-    active = Column(Boolean, default=True)
-    notes = Column(Text)
-    created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    id = Column(Integer, primary_key=True, index=True)
+    first_name = Column(String(50), nullable=False)
+    last_name = Column(String(50), nullable=False)
+    gender = Column(Enum(GenderEnum), nullable=False)
+    date_of_birth = Column(Date, nullable=False)
+    created_at = Column(TIMESTAMP, server_default=func.current_timestamp())
 
-    # Relationships
-    class_ = relationship("Class", back_populates="students")
+    guardians = relationship("Guardian", secondary="student_guardians", back_populates="students")
+    enrollments = relationship("Enrollment", back_populates="student")
     payments = relationship("Payment", back_populates="student")
-    parents = relationship("Parent", secondary=student_parents, back_populates="students")
-    attendance_records = relationship("Attendance", back_populates="student")
     notifications = relationship("Notification", back_populates="student")
 
-    # Constraints
+class StudentGuardian(Base):
+    __tablename__ = "student_guardians"
+
+    id = Column(Integer, primary_key=True, index=True)
+    student_id = Column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    guardian_id = Column(Integer, ForeignKey("guardians.id", ondelete="CASCADE"), nullable=False)
+
+class Class(Base):
+    __tablename__ = "classes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(50), nullable=False)
+    capacity = Column(Integer, nullable=False)
+    registered = Column(Integer, default=0)
+    day_of_week = Column(Enum(DayOfWeekEnum), nullable=False)
+    start_time = Column(String(5), nullable=False)
+    end_time = Column(String(5), nullable=False)
+    created_at = Column(TIMESTAMP, server_default=func.current_timestamp())
+
     __table_args__ = (
-        CheckConstraint('birth_date <= CURRENT_DATE', name='check_valid_birth_date'),
+        CheckConstraint('capacity > 0', name='capacity_positive'),
+        CheckConstraint('registered >= 0', name='registered_positive'),
+        CheckConstraint('registered <= capacity', name='registered_not_exceed_capacity'),
     )
 
-class Parent(Base):
-    __tablename__ = "parents"
+    enrollments = relationship("Enrollment", back_populates="class_")
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    last_name = Column(String(100), nullable=False)
-    first_name = Column(String(100), nullable=False)
-    email = Column(String(100), nullable=False, unique=True)
-    phone = Column(String(20), nullable=False)
-    address = Column(Text)
-    registration_date = Column(DateTime, server_default=func.now())
-    created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+class Enrollment(Base):
+    __tablename__ = "enrollments"
 
-    # Relationships
-    students = relationship("Student", secondary=student_parents, back_populates="parents")
+    id = Column(Integer, primary_key=True, index=True)
+    student_id = Column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    class_id = Column(Integer, ForeignKey("classes.id", ondelete="CASCADE"), nullable=False)
+    enrollment_date = Column(Date, server_default=func.current_date())
+    status = Column(Enum(EnrollmentStatusEnum), nullable=False)
 
-    # Constraints
-    __table_args__ = (
-        CheckConstraint(
-            "email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$'",
-            name='check_valid_email'
-        ),
-    )
+    student = relationship("Student", back_populates="enrollments")
+    class_ = relationship("Class", back_populates="enrollments")
 
 class Payment(Base):
     __tablename__ = "payments"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    student_id = Column(Integer, ForeignKey("students.id", ondelete="RESTRICT"), nullable=False)
-    class_id = Column(Integer, ForeignKey("classes.id", ondelete="RESTRICT"), nullable=False)
-    amount = Column(DECIMAL(10, 2), nullable=False)
-    payment_date = Column(DateTime, server_default=func.now())
-    due_date = Column(Date, nullable=False)
-    status = Column(Enum(PaymentStatus), default=PaymentStatus.pending)
-    payment_method = Column(String(50))
-    transaction_id = Column(String(100), unique=True)
-    notes = Column(Text)
-    created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
-
-    # Relationships
-    student = relationship("Student", back_populates="payments")
-    class_ = relationship("Class", back_populates="payments")
-    notifications = relationship("Notification", back_populates="payment")
-
-    # Constraints
-    __table_args__ = (
-        CheckConstraint('amount > 0', name='check_positive_amount'),
-    )
-
-class Attendance(Base):
-    __tablename__ = "attendance"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True, index=True)
     student_id = Column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
-    class_id = Column(Integer, ForeignKey("classes.id", ondelete="CASCADE"), nullable=False)
-    attendance_date = Column(Date, nullable=False)
-    status = Column(String(20), nullable=False)
-    notes = Column(Text)
-    created_at = Column(DateTime, server_default=func.now())
+    amount = Column(Numeric(10, 2), nullable=False)
+    due_date = Column(Date, nullable=False)
+    payment_date = Column(TIMESTAMP, server_default=func.current_timestamp())
+    method = Column(Enum(PaymentMethodEnum), nullable=False)
+    description = Column(Text)
 
-    # Relationships
-    student = relationship("Student", back_populates="attendance_records")
-    class_ = relationship("Class", back_populates="attendance_records")
-
-    # Constraints
-    __table_args__ = (
-        UniqueConstraint('student_id', 'class_id', 'attendance_date', name='unique_attendance_record'),
-        CheckConstraint(
-            "status IN ('present', 'absent', 'late', 'excused')",
-            name='check_valid_attendance_status'
-        ),
-    )
+    student = relationship("Student", back_populates="payments")
 
 class Notification(Base):
     __tablename__ = "notifications"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True, index=True)
     student_id = Column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
-    payment_id = Column(Integer, ForeignKey("payments.id", ondelete="CASCADE"), nullable=False)
-    type = Column(Enum(NotificationType), nullable=False)
-    message = Column(Text, nullable=False)
-    is_read = Column(Boolean, default=False)
-    is_sent = Column(Boolean, default=False)
-    created_at = Column(DateTime, server_default=func.now())
-    sent_at = Column(DateTime)
-    read_at = Column(DateTime)
+    type = Column(Enum(NotificationTypeEnum), nullable=False)
+    created_by = Column(Integer, nullable=False)
+    status = Column(Enum(NotificationStatusEnum), nullable=False, default="pending")
+    content = Column(Text, nullable=False)
+    created_at = Column(TIMESTAMP, server_default=func.current_timestamp())
 
-    # Relationships
     student = relationship("Student", back_populates="notifications")
-    payment = relationship("Payment", back_populates="notifications")

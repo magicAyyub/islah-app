@@ -1,157 +1,214 @@
+from datetime import time
 from pydantic import BaseModel, EmailStr, constr, validator, Field
 from typing import Optional, List
 from datetime import date, datetime
 from enum import Enum
 
-class PaymentStatus(str, Enum):
-    pending = "pending"
-    completed = "completed"
-    failed = "failed"
-    refunded = "refunded"
+# Enums
+class Role(str, Enum):
+    ADMIN = 'admin'
+    AGENT = 'agent'
+    DIRECTION = 'direction'
 
-class RelationType(str, Enum):
-    mother = "mother"
-    father = "father"
-    guardian = "guardian"
-    other = "other"
+class GuardianRole(str, Enum):
+    FATHER = 'father'
+    MOTHER = 'mother'
+    GUARDIAN = 'guardian'
+
+class Gender(str, Enum):
+    MALE = 'male'
+    FEMALE = 'female'
+    OTHER = 'other'
+
+class DayOfWeek(str, Enum):
+    MONDAY = 'monday'
+    TUESDAY = 'tuesday'
+    WEDNESDAY = 'wednesday'
+    THURSDAY = 'thursday'
+    FRIDAY = 'friday'
+    SATURDAY = 'saturday'
+    SUNDAY = 'sunday'
+
+class EnrollmentStatus(str, Enum):
+    ACTIVE = 'active'
+    COMPLETED = 'completed'
+    WITHDRAWN = 'withdrawn'
+
+class PaymentMethod(str, Enum):
+    CASH = 'cash'
+    CARD = 'card'
+    TRANSFER = 'transfer'
 
 class NotificationType(str, Enum):
-    payment_due = "payment_due"
-    payment_overdue = "payment_overdue"
-    payment_received = "payment_received"
-    payment_failed = "payment_failed"
+    PAYMENT_REMINDER = 'payment_reminder'
+    RE_ENROLLMENT_REMINDER = 're_enrollment_reminder'
 
-class AttendanceStatus(str, Enum):
-    present = "present"
-    absent = "absent"
-    late = "late"
-    excused = "excused"
+class NotificationStatus(str, Enum):
+    PENDING = 'pending'
+    SENT = 'sent'
 
-# Base Models (for request bodies)
-class ClassBase(BaseModel):
-    name: str
-    teacher: str
-    description: Optional[str] = None
-    capacity: int = Field(gt=0)
-    start_date: date
-    end_date: date
+# Base Models
+class UserBase(BaseModel):
+    first_name: str = Field(..., min_length=1, max_length=50)
+    last_name: str = Field(..., min_length=1, max_length=50)
+    email: EmailStr
+    role: Role
 
-    @validator('end_date')
-    def validate_dates(cls, v, values):
-        if 'start_date' in values and v < values['start_date']:
-            raise ValueError('end_date must be after start_date')
-        return v
+class GuardianBase(BaseModel):
+    first_name: str = Field(..., min_length=1, max_length=50)
+    last_name: str = Field(..., min_length=1, max_length=50)
+    role: GuardianRole
+    phone_number: str = Field(..., pattern=r'^\+?1?\d{9,15}$')
+    email: Optional[EmailStr] = None
 
 class StudentBase(BaseModel):
-    last_name: str
-    first_name: str
-    class_id: Optional[int] = None
-    birth_date: date
-    notes: Optional[str] = None
+    first_name: str = Field(..., min_length=1, max_length=50)
+    last_name: str = Field(..., min_length=1, max_length=50)
+    gender: Gender
+    date_of_birth: date
 
-class ParentBase(BaseModel):
-    last_name: str
-    first_name: str
-    email: EmailStr
-    phone: constr = Field(..., pattern=r'^\+?1?\d{9,15}$')
-    address: Optional[str] = None
+class ClassBase(BaseModel):
+    name: str = Field(..., min_length=1, max_length=50)
+    capacity: int = Field(..., gt=0)
+    day_of_week: DayOfWeek
+    start_time: str = Field(..., pattern='^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$')
+    end_time: str = Field(..., pattern='^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$')
+
+class EnrollmentBase(BaseModel):
+    student_id: int
+    class_id: int
+    status: EnrollmentStatus
 
 class PaymentBase(BaseModel):
     student_id: int
-    class_id: int
-    amount: float = Field(gt=0)
+    amount: float = Field(..., gt=0)
     due_date: date
-    payment_method: Optional[str] = None
-    notes: Optional[str] = None
+    method: PaymentMethod
+    description: Optional[str] = None
 
-class AttendanceBase(BaseModel):
+class NotificationBase(BaseModel):
     student_id: int
-    class_id: int
-    attendance_date: date
-    status: AttendanceStatus
-    notes: Optional[str] = None
+    type: NotificationType
+    created_by: int
+    content: str
 
-# Response Models (for responses)
-class ClassResponse(ClassBase):
+# Response Models
+class UserResponse(UserBase):
     id: int
-    registered: int
     created_at: datetime
-    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class GuardianResponse(GuardianBase):
+    id: int
+    created_at: datetime
 
     class Config:
         from_attributes = True
 
 class StudentResponse(StudentBase):
     id: int
-    active: bool
-    registration_date: datetime
     created_at: datetime
-    updated_at: datetime
+    guardians: List[GuardianResponse]
 
     class Config:
         from_attributes = True
 
-class ParentResponse(ParentBase):
+class ClassResponse(ClassBase):
     id: int
-    registration_date: datetime
+    registered: int
     created_at: datetime
-    updated_at: datetime
+    start_time: str
+    end_time: str
+
+    class Config:
+        from_attributes = True
+
+    @validator('start_time', 'end_time', pre=True)
+    def convert_time_to_string(cls, v):
+        if isinstance(v, time):
+            return v.strftime('%H:%M')
+        return v
+
+class EnrollmentResponse(EnrollmentBase):
+    id: int
+    enrollment_date: date
 
     class Config:
         from_attributes = True
 
 class PaymentResponse(PaymentBase):
     id: int
-    status: PaymentStatus
-    payment_date: datetime
-    transaction_id: Optional[str]
-    created_at: datetime
-    updated_at: datetime
+    payment_date: Optional[datetime]
 
     class Config:
         from_attributes = True
 
-class AttendanceResponse(AttendanceBase):
+class NotificationResponse(NotificationBase):
     id: int
+    status: NotificationStatus
     created_at: datetime
 
     class Config:
         from_attributes = True
 
-class NotificationResponse(BaseModel):
-    id: int
-    student_id: int
-    payment_id: int
-    type: NotificationType
-    message: str
-    is_read: bool
-    is_sent: bool
-    created_at: datetime
-    sent_at: Optional[datetime]
-    read_at: Optional[datetime]
+# Create Models
+class UserCreate(UserBase):
+    password: str = Field(..., min_length=8)
 
-    class Config:
-        from_attributes = True
+class GuardianCreate(GuardianBase):
+    pass
 
-# Additional Models for specific operations
-class StudentParentAssociation(BaseModel):
-    student_id: int
-    parent_id: int
-    relationship_type: RelationType
-    is_primary_contact: bool = False
+class StudentCreate(StudentBase):
+    guardian_ids: List[int]
 
-class StudentWithDetails(StudentResponse):
-    class_: Optional[ClassResponse] = None
-    parents: List[ParentResponse] = []
-    payments: List[PaymentResponse] = []
-    notifications: List[NotificationResponse] = []
+class ClassCreate(ClassBase):
+    pass
 
-    class Config:
-        from_attributes = True
+class EnrollmentCreate(EnrollmentBase):
+    pass
 
-class PaymentWithDetails(PaymentResponse):
-    student: StudentResponse
-    notifications: List[NotificationResponse] = []
+class PaymentCreate(PaymentBase):
+    pass
 
-    class Config:
-        from_attributes = True
+class NotificationCreate(NotificationBase):
+    pass
+
+# Update Models
+class UserUpdate(BaseModel):
+    first_name: Optional[str] = Field(None, min_length=1, max_length=50)
+    last_name: Optional[str] = Field(None, min_length=1, max_length=50)
+    email: Optional[EmailStr] = None
+    role: Optional[Role] = None
+
+class GuardianUpdate(BaseModel):
+    first_name: Optional[str] = Field(None, min_length=1, max_length=50)
+    last_name: Optional[str] = Field(None, min_length=1, max_length=50)
+    role: Optional[GuardianRole] = None
+    phone_number: Optional[str] = Field(None, pattern=r'^\+?1?\d{9,15}$')
+    email: Optional[EmailStr] = None
+
+class StudentUpdate(BaseModel):
+    first_name: Optional[str] = Field(None, min_length=1, max_length=50)
+    last_name: Optional[str] = Field(None, min_length=1, max_length=50)
+    gender: Optional[Gender] = None
+    date_of_birth: Optional[date] = None
+    guardian_ids: Optional[List[int]] = None
+
+class ClassUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=50)
+    capacity: Optional[int] = Field(None, gt=0)
+    day_of_week: Optional[DayOfWeek] = None
+    start_time: Optional[str] = Field(None, pattern='^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$') # 09:00
+    end_time: Optional[str] = Field(None, pattern='^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$') # 18:00
+
+    
+class EnrollmentUpdate(BaseModel):
+    status: Optional[EnrollmentStatus] = None
+
+class PaymentUpdate(BaseModel):
+    amount: Optional[float] = Field(None, gt=0)
+    due_date: Optional[date] = None
+    method: Optional[PaymentMethod] = None
+    description: Optional[str] = None

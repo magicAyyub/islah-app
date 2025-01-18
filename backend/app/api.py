@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from utils.database import engine
 import utils.models as models
-from app.routes import students, parents, classes, payments, notifications, attendances
+from app.routes import students, classes, payments, notifications, enrollments, guardians
 from utils.settings import ORIGINS
 
 
@@ -26,11 +26,12 @@ app.add_middleware(
 
 # Include all routes
 app.include_router(students.router)
-app.include_router(parents.router)
+app.include_router(guardians.router)
 app.include_router(classes.router)
 app.include_router(payments.router)
 app.include_router(notifications.router)
-app.include_router(attendances.router)
+app.include_router(enrollments.router)
+app.include_router(enrollments.router)
 
 
 # Root endpoint to verify API connection
