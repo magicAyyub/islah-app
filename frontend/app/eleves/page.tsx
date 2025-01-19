@@ -17,8 +17,8 @@ type Student = {
   last_name: string;
   first_name: string;
   class_id: string;
-  birth_date: string;
-  registration_date: string;
+  date_of_birth: string;
+  created_at: string;
 }
 
 const StudentRow = ({ student, onReinscription, onRenvoi, index }: { student: Student; onReinscription: (student: Student) => void; onRenvoi: (student: Student) => void; index: number }) => {
@@ -30,8 +30,8 @@ const StudentRow = ({ student, onReinscription, onRenvoi, index }: { student: St
       <TableCell>{student.last_name}</TableCell>
       <TableCell>{student.first_name}</TableCell>
       <TableCell>{student.class_id}</TableCell>
-      <TableCell>{new Date(student.birth_date).toLocaleDateString()}</TableCell>
-      <TableCell>{new Date(student.registration_date).toLocaleDateString()}</TableCell>
+      <TableCell>{new Date(student.date_of_birth).toLocaleDateString()}</TableCell>
+      <TableCell>{new Date(student.created_at).toLocaleDateString()}</TableCell>
       <TableCell>
         <div className="flex space-x-2">
           <Dialog open={isReinscriptionOpen} onOpenChange={setIsReinscriptionOpen}>
@@ -85,7 +85,7 @@ export default function StudentsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [newStudent, setNewStudent] = useState<Omit<Student, 'id' | 'registration_date'>>({ last_name: '', first_name: '', class_id: '', birth_date: '' })
+  const [newStudent, setNewStudent] = useState<Omit<Student, 'id' | 'created_at'>>({ last_name: '', first_name: '', class_id: '', date_of_birth: '' })
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
@@ -176,15 +176,15 @@ export default function StudentsPage() {
           last_name: newStudent.last_name,
           first_name: newStudent.first_name,
           class_id: newStudent.class_id,
-          birth_date: newStudent.birth_date,
-          registration_date: new Date().toISOString().split('T')[0],
+          date_of_birth: newStudent.date_of_birth,
+          created_at: new Date().toISOString().split('T')[0],
         }),
       });
       if (!response.ok) throw new Error('Erreur lors de l\'ajout de l\'élève');
       const addedStudent: Student = await response.json();
       setStudents([addedStudent, ...students]);
       setIsAddDialogOpen(false);
-      setNewStudent({ last_name: '', first_name: '', class_id: '', birth_date: '' });
+      setNewStudent({ last_name: '', first_name: '', class_id: '', date_of_birth: '' });
       toast({
         title: "Élève ajouté",
         description: `${newStudent.first_name} ${newStudent.last_name} a été ajouté avec succès.`,
@@ -264,13 +264,13 @@ export default function StudentsPage() {
                 </Select>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="birth_date" className="text-right">Date de naissance</Label>
+                <Label htmlFor="date_of_birth" className="text-right">Date de naissance</Label>
                 <Input
-                  id="birth_date"
-                  name="birth_date"
+                  id="date_of_birth"
+                  name="date_of_birth"
                   type="date"
-                  value={newStudent.birth_date}
-                  onChange={(e) => setNewStudent({ ...newStudent, birth_date: e.target.value })}
+                  value={newStudent.date_of_birth}
+                  onChange={(e) => setNewStudent({ ...newStudent, date_of_birth: e.target.value })}
                   className="col-span-3"
                 />
               </div>

@@ -26,7 +26,7 @@ export function ParentSearch({ onSelect }: ParentSearchProps) {
     const fetchParents = async () => {
       setIsLoading(true)
       try {
-        const response = await fetch(`/api/parents/search?q=${encodeURIComponent(query)}`)
+        const response = await fetch(`/api/guardians/search?q=${encodeURIComponent(query)}`)
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
         const data: Parent[] = await response.json()
         setParents(data)

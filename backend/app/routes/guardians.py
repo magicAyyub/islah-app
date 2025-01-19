@@ -6,7 +6,7 @@ from utils import schemas, models
 from typing import List, Optional
 
 router = APIRouter(
-    prefix="/guardians",
+    prefix="/api/guardians",
     tags=["Guardians"]
 )
 

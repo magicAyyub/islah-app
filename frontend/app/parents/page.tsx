@@ -15,19 +15,21 @@ type Parent = {
   id?: number;
   last_name: string;
   first_name: string;
+  role: string;
   email: string;
-  phone: string;
-  registration_date: string;
+  phone_number: string;
+  created_at: string;
 }
 
 const ParentRow = ({ parent, onEdit, index }: { parent: Parent; onEdit: (parent: Parent) => void; index: number }) => {
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [editedParent, setEditedParent] = useState(parent)
-  const mapping_keys: { [key in keyof Omit<Parent, 'id' | 'registration_date'>]: string } = {
+  const mapping_keys: { [key in keyof Omit<Parent, 'id' | 'created_at'>]: string } = {
     "last_name": "Nom",
     "first_name": "Prénom",
     "email": "Email",
-    "phone": "Téléphone",
+    "phone_number": "Téléphone",
+    "role": "Role"
   }
 
   const handleEdit = () => {
@@ -40,8 +42,8 @@ const ParentRow = ({ parent, onEdit, index }: { parent: Parent; onEdit: (parent:
       <TableCell>{parent.last_name}</TableCell>
       <TableCell>{parent.first_name}</TableCell>
       <TableCell>{parent.email}</TableCell>
-      <TableCell>{parent.phone}</TableCell>
-      <TableCell>{parent.registration_date}</TableCell>
+      <TableCell>{parent.phone_number}</TableCell>
+      <TableCell>{new Date(parent.created_at).toLocaleDateString()}</TableCell>
       <TableCell>
         <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
           <DialogTrigger asChild>
@@ -56,7 +58,7 @@ const ParentRow = ({ parent, onEdit, index }: { parent: Parent; onEdit: (parent:
             </DialogHeader>
             <div className="grid gap-4 py-4">
               {Object.entries(editedParent).map(([key, value]) => (
-                key !== 'id' && key !== 'registration_date' && (
+                key !== 'id' && key !== 'created_at' && (
                   <div key={key} className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor={key} className="text-right">
                       {mapping_keys[key as keyof typeof mapping_keys]}
@@ -88,7 +90,7 @@ export default function ParentsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [newParent, setNewParent] = useState<Omit<Parent, 'id' | 'registration_date'>>({ last_name: '', first_name: '', email: '', phone: '' })
+  const [newParent, setNewParent] = useState<Omit<Parent, 'id' | 'created_at'>>({ last_name: '', first_name: '', role: '', email: '', phone_number: '' })
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
@@ -96,13 +98,14 @@ export default function ParentsPage() {
     "last_name": "Nom",
     "first_name": "Prénom",
     "email": "Email",
-    "phone": "Téléphone",
+    "phone_number": "Téléphone",
+    "role": "Role"
   }
 
   const loadParents = useCallback(async (search: string = "") => {
     setIsLoading(true)
     try {
-      const response = await fetch(`/api/parents`)
+      const response = await fetch(`/api/guardians`)
       if (!response.ok) throw new Error('Erreur lors du chargement des parents')
       const data: Parent[] = await response.json()
     
@@ -111,7 +114,7 @@ export default function ParentsPage() {
           parent.last_name.toLowerCase().includes(search.toLowerCase()) ||
           parent.first_name.toLowerCase().includes(search.toLowerCase()) ||
           parent.email.toLowerCase().includes(search.toLowerCase()) ||
-          parent.phone.includes(search)
+          parent.phone_number.includes(search)
         ))
         setParents(filteredParents)
       }
@@ -167,7 +170,7 @@ export default function ParentsPage() {
       const response = await fetch('/api/parents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({...newParent, registration_date: new Date().toISOString().split('T')[0]}),
+        body: JSON.stringify({...newParent, created_at: new Date().toISOString().split('T')[0]}),
       })
       if (!response.ok) throw new Error('Erreur lors de l\'ajout du parent')
       toast({
@@ -175,7 +178,7 @@ export default function ParentsPage() {
         description: `${newParent.first_name} ${newParent.last_name} a été ajouté avec succès.`,
       })
       setIsAddDialogOpen(false)
-      setNewParent({ last_name: '', first_name: '', email: '', phone: '' })
+      setNewParent({ last_name: '', first_name: '', role: '', email: '', phone_number: '' })
       loadParents(searchTerm)
     } catch (error) {
       console.error('Erreur:', error)

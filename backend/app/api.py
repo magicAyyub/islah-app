@@ -31,7 +31,6 @@ app.include_router(classes.router)
 app.include_router(payments.router)
 app.include_router(notifications.router)
 app.include_router(enrollments.router)
-app.include_router(enrollments.router)
 
 
 # Root endpoint to verify API connection

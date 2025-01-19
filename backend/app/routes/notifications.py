@@ -5,7 +5,7 @@ from utils import schemas, models
 from typing import List, Optional
 
 router = APIRouter(
-    prefix="/notifications",
+    prefix="/api/notifications",
     tags=["Notifications"]
 )
 
