@@ -16,7 +16,7 @@ CREATE TABLE Guardians (
     last_name VARCHAR(50) NOT NULL,
     role VARCHAR(20) NOT NULL CHECK (role IN ('father', 'mother', 'guardian')),
     phone_number VARCHAR(15) NOT NULL,
-    email VARCHAR(100),
+    email VARCHAR(100) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

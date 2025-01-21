@@ -1,34 +1,40 @@
 "use client"
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react'
+import type React from "react"
+import { useState, useCallback, useEffect, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, CheckCircle2, Search, Calendar, Book, User, Sparkles } from 'lucide-react'
+import { Loader2, CheckCircle2, Search, Calendar, Book, User, Sparkles } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
-import { Student, Parent, Class } from "@/types/models"
+import type { Student, Parent, Class } from "@/types/models"
 import { ParentSearch } from "@/components/ParentSearch"
 import { createGuardian, createStudent, createEnrollment } from "@/lib/api"
-import confetti from 'canvas-confetti'
+import confetti from "canvas-confetti"
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
 }
 
 const staggerChildren = {
   hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+  visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
 }
 
-const CustomInput = ({ label, icon: Icon, error, ...props }: { 
-  label: string; 
-  icon: React.ElementType;
-  error?: string;
+const CustomInput = ({
+  label,
+  icon: Icon,
+  error,
+  ...props
+}: {
+  label: string
+  icon: React.ElementType
+  error?: string
 } & React.InputHTMLAttributes<HTMLInputElement>) => (
   <div className="space-y-2">
     <Label htmlFor={props.id} className="text-sm font-medium text-gray-600 flex items-center">
@@ -41,7 +47,7 @@ const CustomInput = ({ label, icon: Icon, error, ...props }: {
         className={cn(
           "pl-10 h-10 border bg-white rounded-md transition-all duration-200 ease-in-out",
           "focus:ring-2 focus:ring-[#4F46E5] focus:border-transparent",
-          error ? "border-red-500" : "border-gray-200"
+          error ? "border-red-500" : "border-gray-200",
         )}
       />
       <Icon className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -55,7 +61,7 @@ const SuccessMessage = () => {
     confetti({
       particleCount: 100,
       spread: 70,
-      origin: { y: 0.6 }
+      origin: { y: 0.6 },
     })
   }, [])
 
@@ -81,45 +87,48 @@ export default function InscriptionPage() {
   const [currentStep, setCurrentStep] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
-  const [parentAssociation, setParentAssociation] = useState<'existing' | 'new' | null>(null)
+  const [parentAssociation, setParentAssociation] = useState<"existing" | "new" | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const { toast } = useToast()
 
-  const steps = useMemo(() => [
-    { 
-      title: "Student Details", 
-      icon: User, 
-      fields: ["first_name", "last_name", "date_of_birth", "gender", "class_id"] 
-    },
-    { 
-      title: "Guardian Link", 
-      icon: Search, 
-      fields: [] 
-    },
-    { 
-      title: "Guardian Info", 
-      icon: User, 
-      fields: ["first_name", "last_name", "email", "phone_number", "role"] 
-    },
-    { 
-      title: "Final Review", 
-      icon: Sparkles, 
-      fields: [] 
-    }
-  ], [])
+  const steps = useMemo(
+    () => [
+      {
+        title: "Student Details",
+        icon: User,
+        fields: ["first_name", "last_name", "date_of_birth", "gender", "class_id"],
+      },
+      {
+        title: "Guardian Link",
+        icon: Search,
+        fields: [],
+      },
+      {
+        title: "Guardian Info",
+        icon: User,
+        fields: ["first_name", "last_name", "email", "phone_number", "role"],
+      },
+      {
+        title: "Final Review",
+        icon: Sparkles,
+        fields: [],
+      },
+    ],
+    [],
+  )
 
   useEffect(() => {
     const fetchClasses = async () => {
       try {
-        const response = await fetch('/api/classes', { 
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' }
+        const response = await fetch("/api/classes", {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
         })
-        if (!response.ok) throw new Error('Failed to fetch classes')
+        if (!response.ok) throw new Error("Failed to fetch classes")
         const data = await response.json()
         setClasses(data)
       } catch (error) {
-        console.error('Error fetching classes:', error)
+        console.error("Error fetching classes:", error)
         toast({
           title: "Error",
           description: "Failed to load classes. Please try again.",
@@ -130,61 +139,74 @@ export default function InscriptionPage() {
 
     fetchClasses()
   }, [toast])
-  
+
   const validateField = useCallback((name: string, value: any) => {
-    if (!value) return `${name} is required`;
-    if (name === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-      return 'Invalid email format';
+    if (!value) return `${name} is required`
+    if (name === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      return "Invalid email format"
     }
-    if (name === 'phone_number' && !/^\+?[\d\s-]{10,}$/.test(value)) {
-      return 'Invalid phone number';
+    if (name === "phone_number" && !/^\+?[\d\s-]{10,}$/.test(value)) {
+      return "Invalid phone number"
     }
-    return '';
+    return ""
   }, [])
 
-  const handleStudentChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setStudentData(prev => ({ ...prev, [name]: value }))
-    setErrors(prev => ({ ...prev, [name]: validateField(name, value) }))
-  }, [validateField])
+  const handleStudentChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const { name, value } = e.target
+      setStudentData((prev) => ({ ...prev, [name]: value }))
+      setErrors((prev) => ({ ...prev, [name]: validateField(name, value) }))
+    },
+    [validateField],
+  )
 
-  const handleParentChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setParentData(prev => ({ ...prev, [name]: value }))
-    setErrors(prev => ({ ...prev, [name]: validateField(name, value) }))
-  }, [validateField])
+  const handleParentChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const { name, value } = e.target
+      setParentData((prev) => {
+        const newData = { ...prev, [name]: value }
+        return newData
+      })
+      setErrors((prev) => ({ ...prev, [name]: validateField(name, value) }))
+    },
+    [validateField],
+  )
 
   const handleClassChange = useCallback((value: string) => {
-    setStudentData(prev => ({ ...prev, class_id: parseInt(value) }))
-    setErrors(prev => ({ ...prev, class_id: '' }))
+    setStudentData((prev) => ({ ...prev, class_id: Number.parseInt(value) }))
+    setErrors((prev) => ({ ...prev, class_id: "" }))
   }, [])
 
   const handleSexChange = useCallback((value: string) => {
-    setStudentData(prev => ({
+    setStudentData((prev) => ({
       ...prev,
-      gender: value as "male" | "female" | "other"
+      gender: value as "male" | "female" | "other",
     }))
-    setErrors(prev => ({ ...prev, gender: '' }))
+    setErrors((prev) => ({ ...prev, gender: "" }))
   }, [])
 
   const handleParentSelect = useCallback((parent: Parent) => {
     setParentData(parent)
-    setParentAssociation('existing')
+    setParentAssociation("existing")
     setCurrentStep(2)
   }, [])
 
-  const handleNewParent = useCallback(() => {
-    setParentAssociation('new')
-    setParentData({}) 
+  const handleNewParent = useCallback((e: React.MouseEvent) => {
+    e.preventDefault() // Prevent form submission
+    setParentAssociation("new")
+    setParentData({})
     setCurrentStep(2)
   }, [])
 
   const handleRoleChange = useCallback((value: string) => {
-    setParentData(prev => ({
-      ...prev,
-      role: value as "father" | "mother" | "guardian"
-    }))
-    setErrors(prev => ({ ...prev, role: '' }))
+    setParentData((prev) => {
+      const newData = {
+        ...prev,
+        role: value as "father" | "mother" | "guardian",
+      }
+      return newData
+    })
+    setErrors((prev) => ({ ...prev, role: "" }))
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -193,32 +215,47 @@ export default function InscriptionPage() {
     setErrors({})
 
     try {
+      // Validate student data
+      const requiredStudentFields = ["first_name", "last_name", "date_of_birth", "gender", "class_id"]
+      const missingStudentFields = requiredStudentFields.filter(
+        (field) => !studentData[field as keyof typeof studentData],
+      )
+
+      if (missingStudentFields.length > 0) {
+        throw new Error(`Missing required student fields: ${missingStudentFields.join(", ")}`)
+      }
+
       let guardianId: number
 
-      if (parentAssociation === 'new') {
+      if (parentAssociation === "new") {
         // Validate guardian data before sending
         const guardianDataToSend = {
           first_name: parentData.first_name,
           last_name: parentData.last_name,
           email: parentData.email,
           phone_number: parentData.phone_number,
-          role: parentData.role
-        };
-
-        // Validate all required fields
-        const requiredFields = ['first_name', 'last_name', 'email', 'phone_number', 'role'];
-        const missingFields = requiredFields.filter(field => !guardianDataToSend[field as keyof typeof guardianDataToSend]);
-
-        if (missingFields.length > 0) {
-          throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+          role: parentData.role,
         }
 
-        const guardian = await createGuardian(guardianDataToSend as Omit<Parent, 'id'>)
+        // Validate all required fields
+        const requiredFields = ["first_name", "last_name", "email", "phone_number", "role"]
+        const missingFields = requiredFields.filter(
+          (field) => !guardianDataToSend[field as keyof typeof guardianDataToSend],
+        )
+
+        if (missingFields.length > 0) {
+          throw new Error(`Missing required guardian fields: ${missingFields.join(", ")}`)
+        }
+
+        const guardian = await createGuardian(guardianDataToSend as Omit<Parent, "id">)
         guardianId = guardian.id
-      } else if (parentAssociation === 'existing') {
-        guardianId = parentData.id!
+      } else if (parentAssociation === "existing") {
+        if (!parentData.id) {
+          throw new Error("Existing guardian ID is missing")
+        }
+        guardianId = parentData.id
       } else {
-        throw new Error("Parent association not selected");
+        throw new Error("Parent association not selected")
       }
 
       const studentRegistrationData = {
@@ -226,25 +263,15 @@ export default function InscriptionPage() {
         last_name: studentData.last_name,
         date_of_birth: studentData.date_of_birth,
         gender: studentData.gender,
-        guardian_ids: [guardianId]
+        guardian_ids: [guardianId],
       }
 
-      // Validate student data
-      const requiredStudentFields = ['first_name', 'last_name', 'date_of_birth', 'gender', 'class_id'];
-      const missingStudentFields = requiredStudentFields.filter(field => !studentData[field as keyof typeof studentData]);
-
-      if (missingStudentFields.length > 0) {
-        throw new Error(`Missing required student fields: ${missingStudentFields.join(', ')}`);
-      }
-
-      const student = await createStudent({ 
-        register_data: studentRegistrationData as Omit<Student, 'id'> 
-      })
+      const student = await createStudent(studentRegistrationData)
 
       await createEnrollment({
         student_id: student.id,
         class_id: studentData.class_id!,
-        status: 'active'
+        status: "active",
       })
 
       setIsSubmitted(true)
@@ -254,67 +281,65 @@ export default function InscriptionPage() {
         duration: 5000,
       })
     } catch (error) {
-      console.error('Registration error:', error);
-      let errorMessage = "An error occurred during registration";
+      console.error("Registration error:", error)
+      let errorMessage = "An error occurred during registration"
       if (error instanceof Error) {
-        errorMessage = error.message;
+        errorMessage = error.message
       }
       toast({
         title: "Registration Error",
         description: errorMessage,
         variant: "destructive",
-      });
-      
+      })
+
       // Set form errors
-      const newErrors: Record<string, string> = {};
-      errorMessage.split(', ').forEach(err => {
-        const [field, message] = err.split(': ');
-        newErrors[field] = message;
-      });
-      setErrors(newErrors);
+      const newErrors: Record<string, string> = {}
+      errorMessage.split(", ").forEach((err) => {
+        const [field, message] = err.split(": ")
+        newErrors[field] = message
+      })
+      setErrors(newErrors)
     } finally {
       setIsSubmitting(false)
     }
   }
 
   useEffect(() => {
-    setErrors({});
-  }, [currentStep]);
+    setErrors({})
+  }, [currentStep])
 
-  const isStepComplete = useCallback((step: number) => {
-    const requiredFields = steps[step].fields
-    if (step === 0) {
-      return requiredFields.every(field => 
-        studentData[field as keyof typeof studentData] && !errors[field]
-      )
-    } else if (step === 1) {
-      return parentAssociation !== null
-    } else if (step === 2) {
-      return parentAssociation === 'existing' || 
-        (parentAssociation === 'new' && 
-          requiredFields.every(field => 
-            parentData[field as keyof typeof parentData] && !errors[field]
-          )
+  const isStepComplete = useCallback(
+    (step: number) => {
+      const requiredFields = steps[step].fields
+      if (step === 0) {
+        return requiredFields.every((field) => studentData[field as keyof typeof studentData] && !errors[field])
+      } else if (step === 1) {
+        return parentAssociation !== null
+      } else if (step === 2) {
+        return (
+          parentAssociation === "existing" ||
+          (parentAssociation === "new" &&
+            requiredFields.every((field) => parentData[field as keyof typeof parentData] && !errors[field]))
         )
-    }
-    return true
-  }, [studentData, parentData, steps, parentAssociation, errors])
+      }
+      return true
+    },
+    [studentData, parentData, steps, parentAssociation, errors],
+  )
 
-  const handleStepChange = useCallback((step: number) => {
-    if (step <= currentStep || isStepComplete(currentStep)) {
-      setCurrentStep(step)
-    }
-  }, [currentStep, isStepComplete])
+  const handleStepChange = useCallback(
+    (step: number) => {
+      if (step <= currentStep || isStepComplete(currentStep)) {
+        setCurrentStep(step)
+      }
+    },
+    [currentStep, isStepComplete],
+  )
 
   return (
-    <motion.div 
-      className="max-w-4xl mx-auto p-6"
-      initial="hidden"
-      animate="visible"
-      variants={fadeInUp}
-    >
+    <motion.div className="max-w-4xl mx-auto p-6" initial="hidden" animate="visible" variants={fadeInUp}>
       <Card className="w-full overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 bg-white">
-        <CardHeader className="bg-[#4F46E5] text-white p-8">
+        <CardHeader className="bg-primary text-white p-8">
           <CardTitle className="text-3xl font-bold">Join the Islah School Family</CardTitle>
           <CardDescription className="text-blue-100 text-lg">
             Embark on a journey of knowledge and growth
@@ -338,15 +363,17 @@ export default function InscriptionPage() {
                       key={index}
                       className={cn(
                         "flex flex-col items-center cursor-pointer",
-                        currentStep === index ? "text-[#4F46E5]" : "text-gray-400"
+                        currentStep === index ? "text-[#4F46E5]" : "text-gray-400",
                       )}
                       onClick={() => handleStepChange(index)}
                       whileHover={{ scale: 1.05 }}
                     >
-                      <div className={cn(
-                        "w-12 h-12 rounded-full flex items-center justify-center mb-2",
-                        currentStep === index ? "bg-[#4F46E5] text-white" : "bg-gray-100"
-                      )}>
+                      <div
+                        className={cn(
+                          "w-12 h-12 rounded-full flex items-center justify-center mb-2",
+                          currentStep === index ? "bg-primary text-white" : "bg-gray-100",
+                        )}
+                      >
                         <step.icon className="w-6 h-6" />
                       </div>
                       <span className="text-sm font-medium">{step.title}</span>
@@ -371,7 +398,7 @@ export default function InscriptionPage() {
                           name="first_name"
                           label="Given Name"
                           icon={User}
-                          value={studentData.first_name || ''}
+                          value={studentData.first_name || ""}
                           onChange={handleStudentChange}
                           error={errors.first_name}
                           required
@@ -381,7 +408,7 @@ export default function InscriptionPage() {
                           name="last_name"
                           label="Family Name"
                           icon={User}
-                          value={studentData.last_name || ''}
+                          value={studentData.last_name || ""}
                           onChange={handleStudentChange}
                           error={errors.last_name}
                           required
@@ -392,7 +419,7 @@ export default function InscriptionPage() {
                           label="Birthday"
                           icon={Calendar}
                           type="date"
-                          value={studentData.date_of_birth || ''}
+                          value={studentData.date_of_birth || ""}
                           onChange={handleStudentChange}
                           error={errors.date_of_birth}
                           required
@@ -412,9 +439,7 @@ export default function InscriptionPage() {
                               <SelectItem value="other">Other</SelectItem>
                             </SelectContent>
                           </Select>
-                          {errors.gender && (
-                            <p className="text-sm text-red-500">{errors.gender}</p>
-                          )}
+                          {errors.gender && <p className="text-sm text-red-500">{errors.gender}</p>}
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="class_id" className="text-sm font-medium text-gray-600 flex items-center">
@@ -427,13 +452,13 @@ export default function InscriptionPage() {
                             </SelectTrigger>
                             <SelectContent>
                               {classes.map((cls) => (
-                                <SelectItem key={cls.id} value={cls.id.toString()}>{cls.name}</SelectItem>
+                                <SelectItem key={cls.id} value={cls.id.toString()}>
+                                  {cls.name}
+                                </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
-                          {errors.class_id && (
-                            <p className="text-sm text-red-500">{errors.class_id}</p>
-                          )}
+                          {errors.class_id && <p className="text-sm text-red-500">{errors.class_id}</p>}
                         </div>
                       </div>
                     </motion.div>
@@ -453,10 +478,11 @@ export default function InscriptionPage() {
                       <div className="text-center mt-8">
                         <span className="text-gray-600">or</span>
                       </div>
-                      <Button 
-                        onClick={handleNewParent} 
-                        variant="outline" 
-                        className="w-full group hover:bg-[#4F46E5] hover:text-white transition-all duration-200"
+                      <Button
+                        onClick={handleNewParent}
+                        type="button" // Explicitly set type to "button"
+                        variant="outline"
+                        className="w-full group hover:bg-primary hover:text-white transition-all duration-200"
                       >
                         <User className="w-4 h-4 mr-2 group-hover:animate-bounce" />
                         Add New Guardian
@@ -474,14 +500,14 @@ export default function InscriptionPage() {
                       className="space-y-6"
                     >
                       <h2 className="text-2xl font-bold mb-4">Guardian Information</h2>
-                      {parentAssociation === 'new' && (
+                      {parentAssociation === "new" && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <CustomInput
                             id="parent_first_name"
                             name="first_name"
                             label="Guardian's Given Name"
                             icon={User}
-                            value={parentData.first_name || ''}
+                            value={parentData.first_name || ""}
                             onChange={handleParentChange}
                             error={errors.first_name}
                             required
@@ -491,7 +517,7 @@ export default function InscriptionPage() {
                             name="last_name"
                             label="Guardian's Family Name"
                             icon={User}
-                            value={parentData.last_name || ''}
+                            value={parentData.last_name || ""}
                             onChange={handleParentChange}
                             error={errors.last_name}
                             required
@@ -502,7 +528,7 @@ export default function InscriptionPage() {
                             label="Guardian's Email"
                             icon={Search}
                             type="email"
-                            value={parentData.email || ''}
+                            value={parentData.email || ""}
                             onChange={handleParentChange}
                             error={errors.email}
                             required
@@ -513,7 +539,7 @@ export default function InscriptionPage() {
                             label="Guardian's Phone"
                             icon={Search}
                             type="tel"
-                            value={parentData.phone_number || ''}
+                            value={parentData.phone_number || ""}
                             onChange={handleParentChange}
                             error={errors.phone_number}
                             required
@@ -533,19 +559,25 @@ export default function InscriptionPage() {
                                 <SelectItem value="guardian">Guardian</SelectItem>
                               </SelectContent>
                             </Select>
-                            {errors.role && (
-                              <p className="text-sm text-red-500">{errors.role}</p>
-                            )}
+                            {errors.role && <p className="text-sm text-red-500">{errors.role}</p>}
                           </div>
                         </div>
                       )}
-                      {parentAssociation === 'existing' && (
+                      {parentAssociation === "existing" && (
                         <div className="bg-gray-50 p-6 rounded-lg">
                           <h3 className="text-xl font-semibold mb-4">Connected Guardian</h3>
-                          <p><strong>Name:</strong> {parentData.first_name} {parentData.last_name}</p>
-                          <p><strong>Email:</strong> {parentData.email}</p>
-                          <p><strong>Phone:</strong> {parentData.phone_number}</p>
-                          <p><strong>Role:</strong> {parentData.role}</p>
+                          <p>
+                            <strong>Name:</strong> {parentData.first_name} {parentData.last_name}
+                          </p>
+                          <p>
+                            <strong>Email:</strong> {parentData.email}
+                          </p>
+                          <p>
+                            <strong>Phone:</strong> {parentData.phone_number}
+                          </p>
+                          <p>
+                            <strong>Role:</strong> {parentData.role}
+                          </p>
                         </div>
                       )}
                     </motion.div>
@@ -563,17 +595,33 @@ export default function InscriptionPage() {
                       <h2 className="text-2xl font-bold mb-4">Final Review</h2>
                       <div className="bg-gray-50 p-6 rounded-lg space-y-4">
                         <h3 className="text-xl font-semibold">Student Information</h3>
-                        <p><strong>Name:</strong> {studentData.first_name} {studentData.last_name}</p>
-                        <p><strong>Birthday:</strong> {studentData.date_of_birth}</p>
-                        <p><strong>Gender:</strong> {studentData.gender}</p>
-                        <p><strong>Learning Group:</strong> {classes.find(c => c.id === studentData.class_id)?.name}</p>
+                        <p>
+                          <strong>Name:</strong> {studentData.first_name} {studentData.last_name}
+                        </p>
+                        <p>
+                          <strong>Birthday:</strong> {studentData.date_of_birth}
+                        </p>
+                        <p>
+                          <strong>Gender:</strong> {studentData.gender}
+                        </p>
+                        <p>
+                          <strong>Learning Group:</strong> {classes.find((c) => c.id === studentData.class_id)?.name}
+                        </p>
                       </div>
                       <div className="bg-gray-50 p-6 rounded-lg space-y-4">
                         <h3 className="text-xl font-semibold">Guardian Information</h3>
-                        <p><strong>Name:</strong> {parentData.first_name} {parentData.last_name}</p>
-                        <p><strong>Email:</strong> {parentData.email}</p>
-                        <p><strong>Phone:</strong> {parentData.phone_number}</p>
-                        <p><strong>Role:</strong> {parentData.role}</p>
+                        <p>
+                          <strong>Name:</strong> {parentData.first_name} {parentData.last_name}
+                        </p>
+                        <p>
+                          <strong>Email:</strong> {parentData.email}
+                        </p>
+                        <p>
+                          <strong>Phone:</strong> {parentData.phone_number}
+                        </p>
+                        <p>
+                          <strong>Role:</strong> {parentData.role}
+                        </p>
                       </div>
                     </motion.div>
                   )}
@@ -593,7 +641,7 @@ export default function InscriptionPage() {
                     type="button"
                     variant="outline"
                     onClick={() => setCurrentStep(currentStep - 1)}
-                    className="transition-all duration-200 ease-in-out hover:bg-[#4F46E5] hover:text-white"
+                    className="transition-all duration-200 ease-in-out hover:bg-primary hover:text-white"
                   >
                     Previous
                   </Button>
@@ -605,7 +653,7 @@ export default function InscriptionPage() {
                     disabled={!isStepComplete(currentStep)}
                     className={cn(
                       "ml-auto transition-all duration-200 ease-in-out",
-                      "bg-[#4F46E5] text-white hover:bg-[#4338CA]"
+                      "bg-primary text-white hover:bg-[#4338CA]",
                     )}
                   >
                     Next
@@ -617,7 +665,7 @@ export default function InscriptionPage() {
                     disabled={isSubmitting || !isStepComplete(currentStep)}
                     className={cn(
                       "ml-auto transition-all duration-200 ease-in-out",
-                      "bg-[#4F46E5] text-white hover:bg-[#4338CA]"
+                      "bg-primary text-white hover:bg-[#4338CA]",
                     )}
                   >
                     {isSubmitting ? (
