@@ -37,7 +37,7 @@ class EnrollmentStatus(str, Enum):
 class PaymentMethod(str, Enum):
     CASH = 'cash'
     CARD = 'card'
-    TRANSFER = 'transfer'
+    CHEQUE = 'cheque'
 
 class NotificationType(str, Enum):
     PAYMENT_REMINDER = 'payment_reminder'

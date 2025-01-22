@@ -350,7 +350,7 @@ export default function StudentsPage() {
   }
 
   const handleAssignClass = async (id: number) => {
-    // This is a placeholder function. You would typically open a dialog to select a class
+    // TODO: This is a placeholder function. You would typically open a dialog to select a class
     // and then send a request to assign the selected class to the student.
     toast({
       title: "Fonctionnalité à implémenter",

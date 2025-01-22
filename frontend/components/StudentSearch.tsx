@@ -4,42 +4,42 @@ import { Label } from "@/components/ui/label"
 import { toast } from "@/hooks/use-toast"
 import { motion, AnimatePresence } from "framer-motion"
 import { Search, User, Calendar, GraduationCap } from 'lucide-react'
-import { Student, Class } from "@/types/payments"
+import { Student, Method } from "@/types/payments"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 type StudentSearchProps = {
-  onSelect: (student: Student, classId: number) => void
+  onSelect: (student: Student, method: string) => void
 }
 
 export function StudentSearch({ onSelect }: StudentSearchProps) {
   const [query, setQuery] = useState('')
   const [students, setStudents] = useState<Student[]>([])
-  const [classes, setClasses] = useState<Class[]>([])
-  const [selectedClassId, setSelectedClassId] = useState<number | null>(null)
+  const [methods, setmethods] = useState<Method[]>([])
+  const [selectedMethod, setSelectedMethod] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    const fetchClasses = async () => {
+    const fetchmethods = async () => {
       try {
-        const response = await fetch('/api/classes')
-        if (!response.ok) throw new Error('Failed to fetch classes')
-        const data: Class[] = await response.json()
-        setClasses(data)
+        const response = await fetch('/api/methods')
+        if (!response.ok) throw new Error('Failed to fetch methods')
+        const data: Method[] = await response.json()
+        setmethods(data)
       } catch (error) {
         console.error('Error:', error)
         toast({
           title: "Error",
-          description: "Failed to load classes. Please try again.",
+          description: "Failed to load methods. Please try again.",
           variant: "destructive",
         })
       }
     }
 
-    fetchClasses()
+    fetchmethods()
   }, [])
 
   useEffect(() => {
-    if (query.length < 2 || !selectedClassId) {
+    if (query.length < 2 || !selectedMethod) {
       setStudents([])
       return
     }
@@ -47,7 +47,9 @@ export function StudentSearch({ onSelect }: StudentSearchProps) {
     const fetchStudents = async () => {
       setIsLoading(true)
       try {
-        const response = await fetch(`/api/students/search?q=${encodeURIComponent(query)}&class_id=${selectedClassId}`)
+        const response = await fetch(
+          `/api/students?search=${encodeURIComponent(query)}`
+        )
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
         const data: Student[] = await response.json()
         setStudents(data)
@@ -69,20 +71,21 @@ export function StudentSearch({ onSelect }: StudentSearchProps) {
     }, 300)
 
     return () => clearTimeout(debounce)
-  }, [query, selectedClassId])
+  }, [query, selectedMethod])
 
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="class-select">Select Class</Label>
-        <Select onValueChange={(value) => setSelectedClassId(Number(value))}>
+        <Label htmlFor="class-select">Method</Label>
+        <Select onValueChange={(value) => setSelectedMethod(value)}>
           <SelectTrigger id="class-select">
-            <SelectValue placeholder="Select a class" />
+            <SelectValue placeholder="Select a method" />
           </SelectTrigger>
           <SelectContent>
-            {classes.map((cls) => (
-              <SelectItem key={cls.id} value={cls.id.toString()}>{cls.name}</SelectItem>
-            ))}
+            {/* Logic à revoir pour éviter la duplication */}
+              <SelectItem key="cash" value="cash">CASH</SelectItem>
+              <SelectItem key="card" value="card">CARD</SelectItem>
+              <SelectItem key="cheque" value="cheque">Chèque</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -98,7 +101,7 @@ export function StudentSearch({ onSelect }: StudentSearchProps) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="pl-10 pr-4 py-2 w-full rounded-full border-2 border-primary focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 ease-in-out"
-            disabled={!selectedClassId}
+            disabled={!selectedMethod}
           />
         </div>
         <AnimatePresence>
@@ -131,7 +134,7 @@ export function StudentSearch({ onSelect }: StudentSearchProps) {
                   exit={{ opacity: 0, y: -10 }}
                   className="p-4 hover:bg-gray-50 cursor-pointer transition-colors duration-150 ease-in-out"
                   onClick={() => {
-                    onSelect(student, selectedClassId!)
+                    onSelect(student, selectedMethod)
                     setQuery('')
                     setStudents([])
                   }}

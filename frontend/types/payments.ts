@@ -1,10 +1,10 @@
 export type Payment = {
     id?: number;
     student_id: number;
-    class_id: number;
+    method: string;
     amount: number;
-    date: string;
-    status: string;
+    due_date: string;
+    description: string;  
   }
   
   export type Student = {
@@ -15,9 +15,10 @@ export type Payment = {
     birth_date: string;
   }
   
-  export type Class = {
-    id: number;
-    name: string;
+  export type Method = {
+    cash: string;
+    card: string;
+    cheque: string;
   }
   
   

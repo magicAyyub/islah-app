@@ -363,7 +363,7 @@ export default function InscriptionPage() {
                       key={index}
                       className={cn(
                         "flex flex-col items-center cursor-pointer",
-                        currentStep === index ? "text-[#4F46E5]" : "text-gray-400",
+                        currentStep === index ? "text-gray-600" : "text-gray-400",
                       )}
                       onClick={() => handleStepChange(index)}
                       whileHover={{ scale: 1.05 }}

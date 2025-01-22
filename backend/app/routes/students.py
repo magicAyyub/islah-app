@@ -35,26 +35,23 @@ def create_student(student_data: schemas.StudentCreate, db: Session = Depends(ge
         raise HTTPException(status_code=400, detail=str(e))
     return db_student
 
-@router.get("/", response_model=List[schemas.StudentResponse])
-def get_students(
+@router.get("/search", response_model=List[schemas.StudentResponse])
+def search_students(
+    q: Optional[str] = None,
+    class_id: Optional[int] = None,
     skip: int = 0,
     limit: int = 100,
-    search: Optional[str] = None,
-    gender: Optional[str] = None,
-    guardian_id: Optional[int] = None,
     db: Session = Depends(get_db)
 ):
     query = db.query(models.Student)
     
-    if search:
+    if q:
         query = query.filter(
-            (models.Student.first_name.ilike(f"%{search}%")) |
-            (models.Student.last_name.ilike(f"%{search}%"))
+            (models.Student.first_name.ilike(f"%{q}%")) |
+            (models.Student.last_name.ilike(f"%{q}%"))
         )
-    if gender:
-        query = query.filter(models.Student.gender == gender)
-    if guardian_id:
-        query = query.join(models.Student.guardians).filter(models.Guardian.id == guardian_id)
+    if class_id:
+        query = query.filter(models.Student.class_id == class_id)
         
     return query.offset(skip).limit(limit).all()
 

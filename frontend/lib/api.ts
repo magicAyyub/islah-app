@@ -18,7 +18,7 @@ export async function createGuardian(guardianData: Omit<Parent, 'id'>) {
     }
     
     return response.json();
-  }
+}
   
   export async function createStudent(studentData: { register_data: Omit<Student, 'id'> }) {
     const response = await fetch('/api/students', {
@@ -38,7 +38,7 @@ export async function createGuardian(guardianData: Omit<Parent, 'id'>) {
     }
     
     return response.json();
-  }
+}
   
   export async function createEnrollment(enrollmentData: Enrollment) {
     const response = await fetch('/api/enrollments', {
@@ -58,6 +58,6 @@ export async function createGuardian(guardianData: Omit<Parent, 'id'>) {
     }
     
     return response.json();
-  }
+}
   
   

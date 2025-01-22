@@ -1,173 +1,123 @@
 "use client"
 
-import { useState } from 'react'
-import Link from 'next/link'
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { BookOpen, Users, CreditCard, BarChart, ArrowRight, Zap, Shield, Bell } from 'lucide-react'
-import PendingApplications from "@/components/pending-application"
-
-// Simuler des demandes d'inscription en attente
-const pendingApplications = [
-  { id: 1, name: "Sophie Martin", class: "CP", date: "2023-09-15" },
-  { id: 2, name: "Lucas Dubois", class: "CE1", date: "2023-09-16" },
-  { id: 3, name: "Emma Bernard", class: "CE2", date: "2023-09-17" },
-]
-
+import React from 'react';
+import { motion } from 'framer-motion';
+import { Button } from "@/components/ui/button";
+import { BookOpen, Users, CreditCard, BarChart, Zap, Shield, Bell, ChevronRight, Globe, Star, TrendingUp } from 'lucide-react';
+import FeatureCard from '@/components/FeatureCard';
+import StatCard from '@/components/StatCard';
 
 export default function Home() {
-  const [applications, setApplications] = useState(pendingApplications)
-
-  const handleApprove = (id: number) => {
-    setApplications(applications.filter(app => app.id !== id))
-    // Ici, vous ajouteriez la logique pour approuver réellement l'inscription
-  }
-
-  const handleReject = (id: number) => {
-    setApplications(applications.filter(app => app.id !== id))
-    // Ici, vous ajouteriez la logique pour rejeter l'inscription
-  }
-
   return (
-    <div className="space-y-12 py-8">
-      <section className="text-center space-y-4">
-        <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary-foreground">
-          Bienvenue à l&apos;École Islah
-        </h1>
-        <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-          Gérez efficacement votre école avec notre système de gestion moderne et intuitif.
+    <div className="min-h-screen space-y-16 py-12 px-4 sm:px-6 lg:px-8">
+      {/* Hero Section */}
+      <motion.section 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center space-y-6"
+      >
+        <div className="relative inline-block">
+
+          <h1 className="relative text-5xl font-bold tracking-tighter sm:text-6xl md:text-7xl">
+            Bienvenue à l&apos;École
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary-foreground ml-2">
+              Islah
+            </span>
+          </h1>
+        </div>
+        <p className="mx-auto max-w-[700px] text-xl text-muted-foreground md:text-2xl">
+          Une approche moderne de l&apos;éducation, centrée sur l&apos;excellence et l&apos;innovation
         </p>
-      </section>
-      
+        <div className="flex justify-center gap-4">
+          <Button size="lg" className="group">
+            Commencer
+            <ChevronRight className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1" />
+          </Button>
+          <Button size="lg" variant="outline">
+            En savoir plus
+          </Button>
+        </div>
+      </motion.section>
+
+      {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="transition-all duration-300 hover:shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <BookOpen className="w-5 h-5 text-primary" />
-              <span>Inscriptions</span>
-            </CardTitle>
-            <CardDescription>Gérez les inscriptions facilement</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">152</p>
-            <p className="text-sm text-muted-foreground">Élèves inscrits</p>
-          </CardContent>
-          <CardFooter>
-            <Link href="/eleves" passHref>
-              <Button variant="ghost" className="w-full justify-start">
-                <span>Voir les détails</span>
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </Link>
-          </CardFooter>
-        </Card>
-
-        <Card className="transition-all duration-300 hover:shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Users className="w-5 h-5 text-primary" />
-              <span>Classes</span>
-            </CardTitle>
-            <CardDescription>Visualisez et gérez les classes</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">8</p>
-            <p className="text-sm text-muted-foreground">Classes actives</p>
-          </CardContent>
-          <CardFooter>
-            <Link href="/classes" passHref>
-              <Button variant="ghost" className="w-full justify-start">
-                <span>Voir les détails</span>
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </Link>
-          </CardFooter>
-        </Card>
-
-        <Card className="transition-all duration-300 hover:shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <CreditCard className="w-5 h-5 text-primary" />
-              <span>Paiements</span>
-            </CardTitle>
-            <CardDescription>Suivez et enregistrez les paiements</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">15 250 €</p>
-            <p className="text-sm text-muted-foreground">Total des paiements ce mois</p>
-          </CardContent>
-          <CardFooter>
-            <Link href="/paiements" passHref>
-              <Button variant="ghost" className="w-full justify-start">
-                <span>Voir les détails</span>
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </Link>
-          </CardFooter>
-        </Card>
-
-        <Card className="transition-all duration-300 hover:shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <BarChart className="w-5 h-5 text-primary" />
-              <span>Rapports</span>
-            </CardTitle>
-            <CardDescription>Accédez aux statistiques et rapports</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">4</p>
-            <p className="text-sm text-muted-foreground">Rapports générés cette semaine</p>
-          </CardContent>
-          <CardFooter>
-            <Link href="/rapports" passHref>
-              <Button variant="ghost" className="w-full justify-start">
-                <span>Voir les détails</span>
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </Link>
-          </CardFooter>
-        </Card>
+        <StatCard
+          icon={BookOpen}
+          title="Inscriptions"
+          value="152"
+          description="Élèves inscrits"
+          href="/eleves"
+        />
+        <StatCard
+          icon={Users}
+          title="Classes"
+          value="8"
+          description="Classes actives"
+          href="/classes"
+        />
+        <StatCard
+          icon={CreditCard}
+          title="Paiements"
+          value="15 250 €"
+          description="Total des paiements ce mois"
+          href="/paiements"
+        />
+        <StatCard
+          icon={BarChart}
+          title="Rapports"
+          value="4"
+          description="Rapports générés cette semaine"
+          href="/rapports"
+        />
       </div>
-      { /* Gestion des demandes d'inscription en attente (affiché que lorsqu'il y en a )*/ }
-      {applications.length > 0 && (
-        <PendingApplications applications={applications} handleApprove={handleApprove} handleReject={handleReject} />
-      )}
 
-      <section className="space-y-8">
-        <h2 className="text-3xl font-bold tracking-tighter text-center sm:text-4xl md:text-5xl">
-          Fonctionnalités principales
-        </h2>
+      {/* Features Section */}
+      <section className="space-y-12">
+        <div className="text-center space-y-4">
+          <motion.h2 
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl"
+          >
+            Une Plateforme Complète
+          </motion.h2>
+          <p className="text-xl text-muted-foreground max-w-[800px] mx-auto">
+            Découvrez nos outils innovants conçus pour optimiser la gestion de votre établissement
+          </p>
+        </div>
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          <Card className="transition-all duration-300 hover:shadow-lg hover:bg-accent">
-            <CardHeader>
-              <Zap className="w-10 h-10 text-primary mb-2" />
-              <CardTitle>Gestion simplifiée</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p>Gérez efficacement les élèves, les classes et les enseignants en quelques clics.</p>
-            </CardContent>
-          </Card>
-          <Card className="transition-all duration-300 hover:shadow-lg hover:bg-accent">
-            <CardHeader>
-              <Shield className="w-10 h-10 text-primary mb-2" />
-              <CardTitle>Sécurité des données</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p>Protégez les informations sensibles avec notre système de sécurité avancé.</p>
-            </CardContent>
-          </Card>
-          <Card className="transition-all duration-300 hover:shadow-lg hover:bg-accent">
-            <CardHeader>
-              <Bell className="w-10 h-10 text-primary mb-2" />
-              <CardTitle>Notifications en temps réel</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p>Restez informé des événements importants grâce aux notifications instantanées.</p>
-            </CardContent>
-          </Card>
+          <FeatureCard
+            icon={Zap}
+            title="Gestion Intelligente"
+            description="Interface intuitive pour gérer efficacement les élèves, les classes et les enseignants avec des automatisations avancées."
+          />
+          <FeatureCard
+            icon={Globe}
+            title="Accessibilité Totale"
+            description="Accédez à vos données depuis n'importe où, avec une synchronisation en temps réel sur tous vos appareils."
+          />
+          <FeatureCard
+            icon={Shield}
+            title="Sécurité Renforcée"
+            description="Protection avancée des données avec chiffrement de bout en bout et conformité RGPD."
+          />
+          <FeatureCard
+            icon={Bell}
+            title="Notifications Intelligentes"
+            description="Système de notifications personnalisables pour rester informé des événements importants."
+          />
+          <FeatureCard
+            icon={Star}
+            title="Suivi Personnalisé"
+            description="Tableaux de bord personnalisables pour suivre la progression de chaque élève."
+          />
+          <FeatureCard
+            icon={TrendingUp}
+            title="Analyses Détaillées"
+            description="Rapports analytiques avancés pour prendre des décisions éclairées."
+          />
         </div>
       </section>
     </div>
-  )
+  );
 }
-
