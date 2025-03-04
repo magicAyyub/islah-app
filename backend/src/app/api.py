@@ -5,10 +5,10 @@ This module contains the FastAPI application and its configuration.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
-from utils.database import engine
-import utils.models as models
-from app.routes import students, classes, payments, notifications, enrollments, guardians
-from utils.settings import ORIGINS
+from src.utils.database import engine
+import src.utils.models as models
+from src.app.routes import students, classes, payments, notifications, enrollments, guardians
+from src.utils.settings import ORIGINS
 
 
 # models.Base.metadata.create_all(bind=engine) 

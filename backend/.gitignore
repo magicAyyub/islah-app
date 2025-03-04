@@ -1,28 +1,45 @@
-# ignore d'un projet fastapi
-
-__pycache__
-
-# ignore de l'environnement virtuel
-venv/
-env/
-ENV/
-.env
-
-# ignore des fichiers de configuration
-*.pyc
+# Python
+__pycache__/
+*.py[cod]
 *.pyo
 *.pyd
-*.pyw
-*.pyz
-*.pyz.asc
-*.pyz.asc.sig
-*.pyz.sig
-*.pyz.sig.asc
+.Python
+env/
+venv/
+*.so
 
-# ignore des fichiers de cache
-*.cache
+# Poetry
+.venv/
+dist/
+*.egg-info/
+poetry.lock
+
+# FastAPI
+.env
+
+# IDEs and editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
 *.log
-*.log.*
-*.log-*
-*.log/*
 
+# Test coverage
+.coverage
+htmlcov/
+
+# Build
+build/
+
+# Docker (ignorer seulement les fichiers spécifiques à l'environnement local)
+.dockerignore
+
+# Backend
+mongo_data/
