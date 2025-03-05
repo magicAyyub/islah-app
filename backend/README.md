@@ -142,8 +142,11 @@ Dans docker desktop, vous pouvez accéder à la base de données.
    - Exécuter des requêtes SQL
    - etc.
 ```bash
-\dt
+\dt # pour voir les tables
+
+SELECT * FROM <table_name>; # pour voir les données d'une table
 ```
+
 
 ## Contribution
 
