@@ -24,16 +24,16 @@ def create_env_file(env_path):
     Crée un fichier .env basé sur les entrées de l'utilisateur.
     """
     print("\n--- Configuration des variables d'environnement ---")
-    mongo_user = get_user_input("Database user", default="admin")
-    mongo_password = get_user_input("Database password", required=True)
-    mongo_host = get_user_input("Database host", default="db")
-    mongo_port = get_user_input("Database port", default="5432")
+    db_user = get_user_input("Database user", default="root")
+    db_password = get_user_input("Database password", required=True)
+    db_host = get_user_input("Database host", default="db")
+    db_port = get_user_input("Database port", default="5432")
 
     env_content = (
-        f"DB_USER={mongo_user}\n"
-        f"DB_PASSWORD={mongo_password}\n"
-        f"DB_HOST={mongo_host}\n"
-        f"DB_PORT={mongo_port}\n"
+        f"DB_USER={db_user}\n"
+        f"DB_PASSWORD={db_password}\n"
+        f"DB_HOST={db_host}\n"
+        f"DB_PORT={db_port}\n"
         "DB_NAME=data\n"
     )
 

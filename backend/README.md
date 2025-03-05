@@ -125,6 +125,26 @@ Vous pouvez modifier ces valeurs si nécessaire.
 
 ---
 
+## Devs
+
+Dans docker desktop, vous pouvez accéder à la base de données. 
+- Cliquer sur le nom du container en cours d'exécution (backend) 
+- Cliquer sur backend_db_1
+- Cliquer sur l'onglet "Exec"
+- Entrer la commande :
+
+```bash
+ psql -h localhost -p 5432 -U <DB_USER> -d <DB_NAME> -W # par exemple psql -h localhost -p 5432 -U root -d data -W 
+```
+- Entrer le mot de passe (DB_PASSWORD) pour accéder à la base de données
+- Vous pouvez :
+   - Voir les tables de la base de données
+   - Exécuter des requêtes SQL
+   - etc.
+```bash
+\dt
+```
+
 ## Contribution
 
 Si vous souhaitez contribuer au projet, suivez ces étapes :
