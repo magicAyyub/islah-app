@@ -23,6 +23,10 @@ watchfiles = "^1.0.4"
 alembic = "^1.14.1"
 pandas = "^2.2.3"
 python-multipart = "^0.0.20"
+pyjwt = "^2.10.1"
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+python-jose = {extras = ["cryptography"], version = "^3.4.0"}
+pydantic-settings = "^2.8.1"
 
 
 [tool.poetry.scripts]

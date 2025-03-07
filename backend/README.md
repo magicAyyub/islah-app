@@ -1,5 +1,5 @@
 
-# Behavior Backend
+# Islah school Backend
 
 Bienvenue dans la partie backend, elle utilise **FastAPI**, **Docker**, et **Poetry** pour une gestion simplifiée des dépendances et de l'environnement. Le script `setup` est conçu pour automatiser la configuration initiale.
 
@@ -145,6 +145,15 @@ Dans docker desktop, vous pouvez accéder à la base de données.
 \dt # pour voir les tables
 
 SELECT * FROM <table_name>; # pour voir les données d'une table
+
+\? # list all the commands
+\l # list databases
+\conninfo # display information about current connection
+\c [DBNAME] # connect to new database, e.g., \c template1
+\dt # list tables of the public schema
+\dt <schema-name>.* # list tables of certain schema, e.g., \dt public.*
+\dt *.* # list tables of all schemas
+\q # quit psql
 ```
 
 

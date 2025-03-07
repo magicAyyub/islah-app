@@ -78,27 +78,3 @@ def get_db() -> Generator[Session, None, None]:
         raise
     finally:
         db.close()
-
-# Optional: Connection test function
-def test_database_connection() -> bool:
-    """
-    Test the database connection.
-    
-    Returns:
-        bool: True if connection is successful, False otherwise
-    """
-    try:
-        with engine.connect() as connection:
-            connection.execute("SELECT 1")
-        return True
-    except Exception as e:
-        print(f"Database connection failed: {e}")
-        return False
-
-# Automatically test connection on import
-if __name__ == "__main__":
-    print("Testing database connection...")
-    if test_database_connection():
-        print("Database connection successful!")
-    else:
-        print("Database connection failed.")
