@@ -2,7 +2,6 @@ import os
 import sys
 from pathlib import Path
 import subprocess
-import secrets
 
 def get_user_input(prompt, default=None, required=True):
     """
@@ -30,8 +29,7 @@ def create_env_file(env_path):
     db_host = get_user_input("Database host", default="db")
     db_port = get_user_input("Database port", default="5432")
     db_name = get_user_input("Database name", default="data")
-    # generate a random key for the admin_init_key
-    admin_init_key = secrets.token_hex(32)  # 64 characters
+    admin_init_key = get_user_input("Admin initialization key", required=True)
 
     env_content = (
         f"DB_USER={db_user}\n"
