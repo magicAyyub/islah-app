@@ -9,18 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
-import {
-  ArrowLeft,
-  Loader2,
-  Search,
-  UserPlus,
-  Users,
-  CheckCircle2,
-  Clock,
-  Calendar,
-  BookOpen,
-  CheckCircle,
-} from "lucide-react"
+import { ArrowLeft, Loader2, UserPlus, Users, Calendar, CheckCircle, Search } from "lucide-react"
 import Link from "next/link"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
@@ -152,6 +141,13 @@ const existingGuardians = [
   },
 ]
 
+// Group classes by day for the schedule view
+const classesByDay = {
+  Wednesday: classData.filter((cls) => cls.day === "Wednesday"),
+  Saturday: classData.filter((cls) => cls.day === "Saturday"),
+  Sunday: classData.filter((cls) => cls.day === "Sunday"),
+}
+
 export default function NewStudentPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
@@ -160,8 +156,7 @@ export default function NewStudentPage() {
   const [selectedGuardian, setSelectedGuardian] = useState("")
   const [guardianSearchTerm, setGuardianSearchTerm] = useState("")
   const [activeTab, setActiveTab] = useState("class-selection")
-  const [filterDay, setFilterDay] = useState("all")
-  const [filterLevel, setFilterLevel] = useState("all")
+  const [selectedAgeGroup, setSelectedAgeGroup] = useState("all")
   const [formProgress, setFormProgress] = useState(33)
 
   const filteredGuardians = guardianSearchTerm
@@ -172,12 +167,6 @@ export default function NewStudentPage() {
           g.email.toLowerCase().includes(guardianSearchTerm.toLowerCase()),
       )
     : existingGuardians
-
-  const filteredClasses = classData.filter((cls) => {
-    if (filterDay !== "all" && cls.day !== filterDay) return false
-    if (filterLevel !== "all" && !cls.name.toLowerCase().includes(filterLevel.toLowerCase())) return false
-    return true
-  })
 
   const handleClassToggle = (classId) => {
     setSelectedClass(classId === selectedClass ? "" : classId)
@@ -197,10 +186,13 @@ export default function NewStudentPage() {
     // Simulate API call
     setTimeout(() => {
       setIsLoading(false)
-      toast.success("Student registered successfully")
+      toast.success("Student registered successfully!")
       router.push("/students")
     }, 1500)
   }
+
+  // Get the selected class data
+  const selectedClassData = classData.find((cls) => cls.id === selectedClass)
 
   return (
     <div className="flex flex-col gap-4 p-4 md:gap-8 md:p-8">
@@ -254,128 +246,174 @@ export default function NewStudentPage() {
           <TabsContent value="class-selection">
             <Card>
               <CardHeader>
-                <CardTitle>Class Availability</CardTitle>
-                <CardDescription>Check available spaces in classes before registration.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex flex-col md:flex-row gap-4 mb-4">
-                  <div className="flex-1">
-                    <Label htmlFor="filterDay">Filter by Day</Label>
-                    <Select value={filterDay} onValueChange={setFilterDay}>
-                      <SelectTrigger id="filterDay" className="mt-1">
-                        <SelectValue placeholder="Select day" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Days</SelectItem>
-                        <SelectItem value="Wednesday">Wednesday</SelectItem>
-                        <SelectItem value="Saturday">Saturday</SelectItem>
-                        <SelectItem value="Sunday">Sunday</SelectItem>
-                      </SelectContent>
-                    </Select>
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div>
+                    <CardTitle>Choose a Class</CardTitle>
+                    <CardDescription>Select a class from our weekly schedule</CardDescription>
                   </div>
-                  <div className="flex-1">
-                    <Label htmlFor="filterLevel">Filter by Level</Label>
-                    <Select value={filterLevel} onValueChange={setFilterLevel}>
-                      <SelectTrigger id="filterLevel" className="mt-1">
-                        <SelectValue placeholder="Select level" />
+                  <div className="w-full md:w-auto">
+                    <Select value={selectedAgeGroup} onValueChange={setSelectedAgeGroup}>
+                      <SelectTrigger className="w-full md:w-[180px]">
+                        <SelectValue placeholder="Filter by age" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">All Levels</SelectItem>
-                        <SelectItem value="beginners">Beginners</SelectItem>
-                        <SelectItem value="intermediate">Intermediate</SelectItem>
-                        <SelectItem value="advanced">Advanced</SelectItem>
+                        <SelectItem value="all">All Age Groups</SelectItem>
+                        <SelectItem value="7-10 years">7-10 years (Beginners)</SelectItem>
+                        <SelectItem value="11-14 years">11-14 years (Intermediate)</SelectItem>
+                        <SelectItem value="14-16 years">14-16 years (Advanced)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {Object.entries(classesByDay).map(([day, classes]) => {
+                    // Filter classes by selected age group
+                    const filteredClasses =
+                      selectedAgeGroup === "all" ? classes : classes.filter((cls) => cls.ageGroup === selectedAgeGroup)
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredClasses.map((cls) => {
-                    const isAvailable = cls.enrolled < cls.capacity
-                    const isSelected = selectedClass === cls.id
-                    const availabilityPercentage = (cls.enrolled / cls.capacity) * 100
+                    if (filteredClasses.length === 0) return null
 
                     return (
-                      <Card
-                        key={cls.id}
-                        className={`overflow-hidden cursor-pointer transition-all hover:shadow-md ${
-                          selectedClass === cls.id ? "ring-2 ring-primary" : !isAvailable ? "opacity-60" : ""
-                        }`}
-                        onClick={() => isAvailable && handleClassToggle(cls.id)}
-                      >
-                        <div className="relative h-2 w-full bg-gray-200">
-                          <div
-                            className={`absolute top-0 left-0 h-full ${
-                              availabilityPercentage >= 100
-                                ? "bg-red-500"
-                                : availabilityPercentage >= 80
-                                  ? "bg-yellow-500"
-                                  : "bg-green-500"
-                            }`}
-                            style={{ width: `${Math.min(availabilityPercentage, 100)}%` }}
-                          ></div>
+                      <div key={day} className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-5 w-5 text-primary" />
+                          <h3 className="font-medium text-lg">{day}</h3>
                         </div>
-                        <CardContent className="p-4">
-                          <div className="flex justify-between items-start mb-2">
-                            <h3 className="font-medium text-sm">{cls.name}</h3>
-                            {isSelected && (
-                              <div className="bg-primary text-primary-foreground rounded-full p-1">
-                                <CheckCircle className="h-4 w-4" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="space-y-2 text-sm">
-                            <div className="flex items-center">
-                              <Calendar className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
-                              <span>{cls.day}</span>
-                            </div>
-                            <div className="flex items-center">
-                              <Clock className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
-                              <span>{cls.timeSlot}</span>
-                            </div>
-                            <div className="flex items-center">
-                              <Users className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
-                              <span>Age: {cls.ageGroup}</span>
-                            </div>
-                            <div>
-                              <div className="text-xs text-muted-foreground mb-1 flex items-center">
-                                <BookOpen className="h-3.5 w-3.5 mr-1.5" />
-                                Subjects:
-                              </div>
-                              <div className="flex flex-wrap gap-1">
-                                {cls.subjects.map((subject, index) => (
-                                  <Badge key={index} variant="outline" className="text-xs">
-                                    {subject}
-                                  </Badge>
+
+                        <div className="relative overflow-hidden rounded-lg border">
+                          <div className="grid grid-cols-12 bg-muted/50 text-xs font-medium text-muted-foreground">
+                            <div className="col-span-2 p-2 border-r">Time</div>
+                            <div className="col-span-10 p-2">
+                              <div className="grid grid-cols-12 gap-1">
+                                {[8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19].map((hour) => (
+                                  <div key={hour} className="text-center">
+                                    {hour}:00
+                                  </div>
                                 ))}
                               </div>
                             </div>
-                            <div className="flex justify-between items-center mt-2">
-                              <span className="text-muted-foreground">Availability:</span>
-                              <Badge
-                                variant={
-                                  !isAvailable
-                                    ? "destructive"
-                                    : cls.enrolled >= cls.capacity * 0.8
-                                      ? "secondary"
-                                      : "default"
-                                }
-                              >
-                                {cls.enrolled}/{cls.capacity}
-                              </Badge>
-                            </div>
                           </div>
-                        </CardContent>
-                      </Card>
+
+                          {filteredClasses.map((cls) => {
+                            const isAvailable = cls.enrolled < cls.capacity
+                            const isSelected = selectedClass === cls.id
+
+                            // Parse time slot
+                            const timeRange = cls.timeSlot.split(" - ")
+                            const startTime = timeRange[0].split(":")
+                            const endTime = timeRange[1].split(":")
+
+                            const startHour = Number.parseInt(startTime[0])
+                            const startMinute = Number.parseInt(startTime[1])
+                            const endHour = Number.parseInt(endTime[0])
+                            const endMinute = Number.parseInt(endTime[1])
+
+                            // Calculate position (8:00 is 0%, 20:00 is 100%)
+                            const timelineStart = 8 // 8 AM
+                            const timelineHours = 12 // 12 hours displayed (8 AM to 8 PM)
+
+                            const startPosition = (startHour - timelineStart + startMinute / 60) / timelineHours
+                            const endPosition = (endHour - timelineStart + endMinute / 60) / timelineHours
+                            const duration = endPosition - startPosition
+
+                            // Calculate availability percentage
+                            const availabilityPercentage = (cls.enrolled / cls.capacity) * 100
+
+                            return (
+                              <div key={cls.id} className="grid grid-cols-12 border-t">
+                                <div className="col-span-2 p-2 border-r flex flex-col justify-center">
+                                  <div className="font-medium">{cls.name}</div>
+                                  <div className="text-xs text-muted-foreground">{cls.ageGroup}</div>
+                                </div>
+                                <div className="col-span-10 p-2 relative">
+                                  <div
+                                    className={`absolute top-2 bottom-2 rounded-md border transition-all ${
+                                      isSelected
+                                        ? "ring-2 ring-primary border-primary"
+                                        : isAvailable
+                                          ? "border-green-200 bg-green-50 hover:bg-green-100 dark:border-green-900 dark:bg-green-950/30 dark:hover:bg-green-950/50"
+                                          : "border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30 opacity-60"
+                                    }`}
+                                    style={{
+                                      left: `${startPosition * 100}%`,
+                                      width: `${duration * 100}%`,
+                                      cursor: isAvailable ? "pointer" : "not-allowed",
+                                    }}
+                                    onClick={() => isAvailable && handleClassToggle(cls.id)}
+                                  >
+                                    <div className="h-full p-2 flex flex-col justify-between">
+                                      <div className="flex justify-between items-start">
+                                        <div className="text-xs font-medium">{cls.timeSlot}</div>
+                                        {isSelected && <CheckCircle className="h-4 w-4 text-primary" />}
+                                      </div>
+
+                                      <div className="mt-auto">
+                                        <div className="w-full bg-background/50 rounded-full h-1.5 mb-1">
+                                          <div
+                                            className={`h-1.5 rounded-full ${
+                                              availabilityPercentage >= 100
+                                                ? "bg-red-500"
+                                                : availabilityPercentage >= 80
+                                                  ? "bg-yellow-500"
+                                                  : "bg-green-500"
+                                            }`}
+                                            style={{ width: `${Math.min(availabilityPercentage, 100)}%` }}
+                                          ></div>
+                                        </div>
+                                        <div className="text-xs">
+                                          {cls.enrolled}/{cls.capacity} students
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
                     )
                   })}
                 </div>
 
-                {filteredClasses.length === 0 && (
+                {Object.values(classesByDay).every((classes) =>
+                  selectedAgeGroup === "all"
+                    ? classes.length === 0
+                    : classes.filter((cls) => cls.ageGroup === selectedAgeGroup).length === 0,
+                ) && (
                   <div className="text-center p-8 border rounded-md">
                     <p className="text-muted-foreground">
-                      No classes match your filter criteria. Try different filters.
+                      No classes match your filter criteria. Try a different age group.
                     </p>
+                  </div>
+                )}
+
+                {selectedClass && (
+                  <div className="mt-6 p-4 bg-primary/10 rounded-lg border border-primary/20">
+                    <h3 className="font-medium flex items-center gap-2 mb-2">
+                      <CheckCircle className="h-5 w-5 text-primary" />
+                      Selected Class
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <p className="text-sm font-medium">{selectedClassData.name}</p>
+                        <p className="text-sm text-muted-foreground">{selectedClassData.ageGroup}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">
+                          {selectedClassData.day}, {selectedClassData.timeSlot}
+                        </p>
+                        <p className="text-sm text-muted-foreground">{selectedClassData.location}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Availability</p>
+                        <p className="text-sm text-muted-foreground">
+                          {selectedClassData.capacity - selectedClassData.enrolled} spots left
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
               </CardContent>
@@ -383,14 +421,8 @@ export default function NewStudentPage() {
                 <Button variant="outline" type="button" asChild>
                   <Link href="/students">Cancel</Link>
                 </Button>
-                <Button
-                  type="button"
-                  onClick={() => handleTabChange("student-info")}
-                  disabled={!selectedClass}
-                  className="gap-2"
-                >
-                  Next
-                  {selectedClass && <CheckCircle2 className="h-4 w-4" />}
+                <Button type="button" onClick={() => handleTabChange("student-info")} disabled={!selectedClass}>
+                  Continue to Student Information
                 </Button>
               </CardFooter>
             </Card>
@@ -442,59 +474,13 @@ export default function NewStudentPage() {
                   <Label htmlFor="medicalNotes">Medical Notes (Optional)</Label>
                   <Textarea id="medicalNotes" placeholder="Any medical conditions or allergies" />
                 </div>
-
-                <div className="space-y-2">
-                  <Label>Selected Class</Label>
-                  <div className="border rounded-md p-3 bg-muted/30">
-                    {selectedClass ? (
-                      (() => {
-                        const cls = classData.find((c) => c.id === selectedClass)
-                        return (
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <div className="bg-primary text-primary-foreground rounded-full p-1">
-                                <CheckCircle className="h-4 w-4" />
-                              </div>
-                              <p className="font-medium">{cls.name}</p>
-                            </div>
-                            <div className="mt-2 flex flex-wrap gap-2">
-                              <Badge variant="outline" className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3" />
-                                {cls.day}
-                              </Badge>
-                              <Badge variant="outline" className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                {cls.timeSlot}
-                              </Badge>
-                              <Badge variant="outline" className="flex items-center gap-1">
-                                <Users className="h-3 w-3" />
-                                {cls.ageGroup}
-                              </Badge>
-                            </div>
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {cls.subjects.map((subject, index) => (
-                                <Badge key={index} variant="secondary" className="text-xs">
-                                  {subject}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )
-                      })()
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        No class selected. Please go back and select a class.
-                      </p>
-                    )}
-                  </div>
-                </div>
               </CardContent>
               <CardFooter className="flex justify-between">
                 <Button variant="outline" type="button" onClick={() => handleTabChange("class-selection")}>
-                  Previous
+                  Back to Class Selection
                 </Button>
                 <Button type="button" onClick={() => handleTabChange("guardian-info")}>
-                  Next
+                  Continue to Guardian Information
                 </Button>
               </CardFooter>
             </Card>
@@ -636,13 +622,9 @@ export default function NewStudentPage() {
               </CardContent>
               <CardFooter className="flex justify-between">
                 <Button variant="outline" type="button" onClick={() => handleTabChange("student-info")}>
-                  Previous
+                  Back to Student Information
                 </Button>
-                <Button
-                  type="submit"
-                  disabled={isLoading || (guardianOption === "existing" && !selectedGuardian)}
-                  className="gap-2"
-                >
+                <Button type="submit" disabled={isLoading || (guardianOption === "existing" && !selectedGuardian)}>
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -651,7 +633,7 @@ export default function NewStudentPage() {
                   ) : (
                     <>
                       <UserPlus className="mr-2 h-4 w-4" />
-                      Register Student
+                      Complete Registration
                     </>
                   )}
                 </Button>
