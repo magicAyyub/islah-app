@@ -8,7 +8,7 @@ from src.utils.models import Creneau
 from src.utils.schemas import CreneauCreate, Creneau as CreneauSchema, CreneauUpdate
 
 router = APIRouter(
-    prefix="/creneaux",
+    prefix="/api/creneaux",
     tags=["creneaux"],
     responses={404: {"description": "Not found"}},
 )

@@ -8,7 +8,7 @@ from src.utils.models import Seance, Cours
 from src.utils.schemas import SeanceCreate, Seance as SeanceSchema, SeanceUpdate
 
 router = APIRouter(
-    prefix="/seances",
+    prefix="/api/seances",
     tags=["seances"],
     responses={404: {"description": "Not found"}},
 )

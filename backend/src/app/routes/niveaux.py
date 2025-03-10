@@ -7,7 +7,7 @@ from src.utils.models import Niveau
 from src.utils.schemas import NiveauCreate, Niveau as NiveauSchema, NiveauUpdate
 
 router = APIRouter(
-    prefix="/niveaux",
+    prefix="/api/niveaux",
     tags=["niveaux"],
     responses={404: {"description": "Not found"}},
 )

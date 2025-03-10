@@ -8,7 +8,7 @@ from src.utils.models import ResponsableLegal
 from src.utils.schemas import ResponsableLegalCreate, ResponsableLegal as ResponsableLegalSchema, ResponsableLegalUpdate
 
 router = APIRouter(
-    prefix="/responsables",
+    prefix="/api/responsables",
     tags=["responsables"],
     responses={404: {"description": "Not found"}},
 )

@@ -7,7 +7,7 @@ from src.utils.models import Matiere
 from src.utils.schemas import MatiereCreate, Matiere as MatiereSchema, MatiereUpdate
 
 router = APIRouter(
-    prefix="/matieres",
+    prefix="/api/matieres",
     tags=["matieres"],
     responses={404: {"description": "Not found"}},
 )

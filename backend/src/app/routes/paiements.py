@@ -9,7 +9,7 @@ from src.utils.models import Paiement, ResponsableLegal, Inscription, Recu
 from src.utils.schemas import PaiementCreate, Paiement as PaiementSchema, PaiementUpdate, RecuCreate
 
 router = APIRouter(
-    prefix="/paiements",
+    prefix="/api/paiements",
     tags=["paiements"],
     responses={404: {"description": "Not found"}},
 )

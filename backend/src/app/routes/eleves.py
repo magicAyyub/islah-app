@@ -8,7 +8,7 @@ from src.utils.models import Eleve, ResponsableLegal
 from src.utils.schemas import EleveCreate, Eleve as EleveSchema, EleveUpdate
 
 router = APIRouter(
-    prefix="/eleves",
+    prefix="/api/eleves",
     tags=["eleves"],
     responses={404: {"description": "Not found"}},
 )

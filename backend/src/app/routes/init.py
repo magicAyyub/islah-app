@@ -13,7 +13,7 @@ from src.utils.auth import get_password_hash
 from datetime import datetime
 
 router = APIRouter(
-    prefix="/init",
+    prefix="/api/init",
     tags=["initialization"],
 )
 

@@ -13,7 +13,7 @@ from src.utils.auth import (
 )
 
 router = APIRouter(
-    prefix="/auth",
+    prefix="/api/auth",
     tags=["authentication"],
     responses={401: {"description": "Non autorisé"}},
 )

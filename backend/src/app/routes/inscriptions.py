@@ -8,7 +8,7 @@ from src.utils.models import Inscription, Eleve, ClasseCreneau, AnneeScolaire
 from src.utils.schemas import InscriptionCreate, Inscription as InscriptionSchema, InscriptionUpdate
 
 router = APIRouter(
-    prefix="/inscriptions",
+    prefix="/api/inscriptions",
     tags=["inscriptions"],
     responses={404: {"description": "Not found"}},
 )

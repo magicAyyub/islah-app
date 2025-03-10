@@ -18,7 +18,7 @@ from src.utils.schemas import (
 from src.utils.auth import get_current_active_user, get_current_admin_user
 
 router = APIRouter(
-    prefix="/bulk",
+    prefix="/api/bulk",
     tags=["bulk-operations"],
     responses={404: {"description": "Not found"}},
 )

@@ -8,7 +8,7 @@ from src.utils.models import Absence, Eleve, Seance
 from src.utils.schemas import AbsenceCreate, Absence as AbsenceSchema, AbsenceUpdate
 
 router = APIRouter(
-    prefix="/absences",
+    prefix="/api/absences",
     tags=["absences"],
     responses={404: {"description": "Not found"}},
 )

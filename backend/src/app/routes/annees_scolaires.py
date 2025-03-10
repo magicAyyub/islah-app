@@ -8,7 +8,7 @@ from src.utils.models import AnneeScolaire
 from src.utils.schemas import AnneeScolaireCreate, AnneeScolaire as AnneeScolaireSchema, AnneeScolaireUpdate
 
 router = APIRouter(
-    prefix="/annees-scolaires",
+    prefix="/api/annees-scolaires",
     tags=["annees-scolaires"],
     responses={404: {"description": "Not found"}},
 )

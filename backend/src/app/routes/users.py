@@ -9,7 +9,7 @@ from src.utils.schemas import UserCreate, User as UserSchema, UserUpdate
 from src.utils.auth import get_password_hash, get_current_active_user, get_current_admin_user
 
 router = APIRouter(
-    prefix="/users",
+    prefix="/api/users",
     tags=["users"],
     responses={404: {"description": "Not found"}},
 )
@@ -29,7 +29,7 @@ def create_user(db: Session, user: UserCreate):
     db_user = User(
         username=user.username,
         email=user.email,
-        password=hashed_password,
+        hashed_password=hashed_password,
         nom=user.nom,
         prenom=user.prenom,
         role=user.role,

@@ -7,7 +7,7 @@ from src.utils.models import Classe, Niveau
 from src.utils.schemas import ClasseCreate, Classe as ClasseSchema, ClasseUpdate
 
 router = APIRouter(
-    prefix="/classes",
+    prefix="/api/classes",
     tags=["classes"],
     responses={404: {"description": "Not found"}},
 )

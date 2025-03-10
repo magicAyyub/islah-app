@@ -7,7 +7,7 @@ from src.utils.models import Cours, Matiere, Classe, User, Creneau, AnneeScolair
 from src.utils.schemas import CoursCreate, Cours as CoursSchema, CoursUpdate
 
 router = APIRouter(
-    prefix="/cours",
+    prefix="/api/cours",
     tags=["cours"],
     responses={404: {"description": "Not found"}},
 )
