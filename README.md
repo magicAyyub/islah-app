@@ -4,8 +4,9 @@ Islah School est une petite école privée située au coeur de la moquée Islah 
 
 Il existe plusieurs niveaux:  2 niveaux de maternelle, 3 niveaux de primaire et bien d'autres. Les classes sont crée par créneau horaire: 
 
-Classe du matin => 10h-13h avec une pause de 11h20 jusqu'à 12h00. 
-Classe de l'après-midi => 14h-17h avec une pause de 15h20 jusqu'à 16h00.
+- Classe du matin => 10h-13h avec une pause de 11h20 jusqu'à 12h00. 
+- Classe de l'après-midi => 14h-17h avec une pause de 15h20 jusqu'à 16h00.
+
 D'autres classes sont crée en fonction des besoins.
 
 Chaque classe a une place limitée d'élèves et on peu avoir plusieurs classes pour un même niveau. Les classes sont crée en fonction des besoins. 
