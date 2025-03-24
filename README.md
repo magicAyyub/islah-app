@@ -23,144 +23,228 @@ Le système actuel est très peu fiable et peu pratique. L'objectif est de crée
 
 Un essie de backend a été fait avec FastAPI, un framework python pour la création d'API REST. Il est à refaire car il n'est pas adapté au cas spécifique de l'école. Une attention particulière sera accordé à la modélisation de la base de données avant de commencer le développement.
 
-## MCD 
+## MCD (à revoir)
 
 ```mermaid
 erDiagram
-    STUDENT {
+    UTILISATEUR {
         int id PK
-        string student_id
-        string first_name
-        string last_name
-        date birth_date
-        string gender
-        int level_id FK
-        int class_id FK
-        date registration_date
-        string status
-        int created_by FK
+        string email
+        string mot_de_passe
+        string nom
+        string prenom
+        string telephone
+        string role
+        date date_creation
+        date derniere_connexion
+        boolean actif
+    }
+    
+    ELEVE {
+        int id PK
+        string nom
+        string prenom
+        date date_naissance
+        string genre
+        string adresse
+        string photo
+        string id_externe
+        boolean actif
+        date date_inscription
     }
     
     PARENT {
         int id PK
-        string first_name
-        string last_name
-        string email
-        string phone
-        string address
+        int utilisateur_id FK
+        string profession
+        string telephone_secondaire
     }
     
-    STUDENT_PARENT {
+    ENSEIGNANT {
         int id PK
-        int student_id FK
+        int utilisateur_id FK
+        string specialite
+        date date_embauche
+        string telephone_urgence
+    }
+    
+    CLASSE {
+        int id PK
+        string nom
+        string niveau
+        string annee_scolaire
+        string creneau
+        int capacite_max
+        boolean active
+    }
+    
+    INSCRIPTION {
+        int id PK
+        int eleve_id FK
+        int classe_id FK
+        date date_inscription
+        string statut
+        date date_fin
+    }
+    
+    PARENT_ELEVE {
         int parent_id FK
-        string relationship
+        int eleve_id FK
+        string relation
+        boolean contact_principal
+        boolean autorise_recuperation
     }
     
-    LEVEL {
+    PRESENCE {
         int id PK
-        string name
-        string description
-    }
-    
-    CLASS {
-        int id PK
-        string name
-        string time_slot
-        int capacity
-        string academic_year
-    }
-    
-    PAYMENT {
-        int id PK
-        string payment_id
-        int student_id FK
-        date payment_date
-        decimal amount
-        string payment_type
-        string payment_method
-        string status
-        int created_by FK
-        string receipt_number
-    }
-    
-    ATTENDANCE {
-        int id PK
-        int student_id FK
-        date attendance_date
+        int eleve_id FK
+        int classe_id FK
+        date date
+        time heure_arrivee
         boolean present
-        string comment
-        boolean justified
-        int recorded_by FK
+        string commentaire
+        int enregistre_par FK
     }
     
-    REPORT_CARD {
+    ABSENCE_JUSTIFICATION {
         int id PK
-        string report_id
-        int student_id FK
-        int trimester
-        string academic_year
-        date created_date
-        string status
-        int created_by FK
-    }
-    
-    GRADE {
-        int id PK
-        int report_card_id FK
-        int subject_id FK
-        decimal grade
-        string comment
-    }
-    
-    SUBJECT {
-        int id PK
-        string name
+        int presence_id FK
+        string motif
         string description
+        string document_url
+        date date_soumission
+        boolean validee
+        int validee_par FK
+    }
+    
+    PAIEMENT {
+        int id PK
+        int eleve_id FK
+        decimal montant
+        date date_paiement
+        string methode
+        string reference
+        string type
+        string statut
+        string commentaire
+        int enregistre_par FK
+    }
+    
+    FACTURE {
+        int id PK
+        int eleve_id FK
+        decimal montant
+        date date_emission
+        date date_echeance
+        string statut
+        string description
+        string reference
+    }
+    
+    BULLETIN {
+        int id PK
+        int eleve_id FK
+        int classe_id FK
+        string trimestre
+        string annee_scolaire
+        date date_publication
+        string statut
+        int publie_par FK
+    }
+    
+    EVALUATION {
+        int id PK
+        int bulletin_id FK
+        string matiere
+        string note
+        string appreciation
+        int enseignant_id FK
+    }
+    
+    EMPLOI_TEMPS {
+        int id PK
+        int classe_id FK
+        string jour
+        time heure_debut
+        time heure_fin
+        string matiere
+        int enseignant_id FK
+        string salle
     }
     
     NOTIFICATION {
         int id PK
-        string title
-        string content
-        date sent_date
-        string notification_type
-        string status
-        int sent_by FK
+        int utilisateur_id FK
+        string titre
+        string contenu
+        date date_creation
+        boolean lue
+        string type
+        string lien
     }
     
-    NOTIFICATION_RECIPIENT {
+    MESSAGE {
         int id PK
-        int notification_id FK
-        int parent_id FK
-        boolean read
-        date read_date
+        string titre
+        string contenu
+        date date_envoi
+        string type
+        int envoye_par FK
     }
     
-    USER {
+    MESSAGE_DESTINATAIRE {
+        int message_id FK
+        int utilisateur_id FK
+        boolean lu
+        date date_lecture
+    }
+    
+    DEMANDE_ACCES {
         int id PK
-        string username
-        string password_hash
-        string first_name
-        string last_name
         string email
-        string role
-        date last_login
+        string nom
+        string prenom
+        string telephone
+        string fonction
+        string message
+        date date_demande
+        string statut
+        int traite_par FK
+        date date_traitement
     }
     
-    STUDENT ||--o{ STUDENT_PARENT : has
-    PARENT ||--o{ STUDENT_PARENT : has
-    LEVEL ||--o{ STUDENT : contains
-    CLASS ||--o{ STUDENT : contains
-    STUDENT ||--o{ PAYMENT : makes
-    STUDENT ||--o{ ATTENDANCE : has
-    STUDENT ||--o{ REPORT_CARD : receives
-    REPORT_CARD ||--o{ GRADE : contains
-    SUBJECT ||--o{ GRADE : has
-    NOTIFICATION ||--o{ NOTIFICATION_RECIPIENT : sent_to
-    PARENT ||--o{ NOTIFICATION_RECIPIENT : receives
-    USER ||--o{ PAYMENT : records
-    USER ||--o{ ATTENDANCE : records
-    USER ||--o{ REPORT_CARD : creates
-    USER ||--o{ NOTIFICATION : sends 
+    CONFIGURATION {
+        int id PK
+        string cle
+        string valeur
+        string description
+        string categorie
+    }
+
+    UTILISATEUR ||--o{ PARENT : "est"
+    UTILISATEUR ||--o{ ENSEIGNANT : "est"
+    PARENT ||--o{ PARENT_ELEVE : "a"
+    ELEVE ||--o{ PARENT_ELEVE : "a"
+    ELEVE ||--o{ INSCRIPTION : "est inscrit"
+    CLASSE ||--o{ INSCRIPTION : "contient"
+    ELEVE ||--o{ PRESENCE : "a"
+    CLASSE ||--o{ PRESENCE : "pour"
+    UTILISATEUR ||--o{ PRESENCE : "enregistre"
+    PRESENCE ||--o{ ABSENCE_JUSTIFICATION : "peut avoir"
+    UTILISATEUR ||--o{ ABSENCE_JUSTIFICATION : "valide"
+    ELEVE ||--o{ PAIEMENT : "concerne"
+    UTILISATEUR ||--o{ PAIEMENT : "enregistre"
+    ELEVE ||--o{ FACTURE : "reçoit"
+    ELEVE ||--o{ BULLETIN : "reçoit"
+    CLASSE ||--o{ BULLETIN : "pour"
+    UTILISATEUR ||--o{ BULLETIN : "publie"
+    BULLETIN ||--o{ EVALUATION : "contient"
+    ENSEIGNANT ||--o{ EVALUATION : "donne"
+    CLASSE ||--o{ EMPLOI_TEMPS : "a"
+    ENSEIGNANT ||--o{ EMPLOI_TEMPS : "enseigne"
+    UTILISATEUR ||--o{ NOTIFICATION : "reçoit"
+    UTILISATEUR ||--o{ MESSAGE : "envoie"
+    MESSAGE ||--o{ MESSAGE_DESTINATAIRE : "est envoyé à"
+    UTILISATEUR ||--o{ MESSAGE_DESTINATAIRE : "reçoit"
+    UTILISATEUR ||--o{ DEMANDE_ACCES : "traite"
 ```
