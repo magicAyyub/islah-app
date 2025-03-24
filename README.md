@@ -22,3 +22,145 @@ Le système actuel est très peu fiable et peu pratique. L'objectif est de crée
 ## Notes
 
 Un essie de backend a été fait avec FastAPI, un framework python pour la création d'API REST. Il est à refaire car il n'est pas adapté au cas spécifique de l'école. Une attention particulière sera accordé à la modélisation de la base de données avant de commencer le développement.
+
+## MCD 
+
+```mermaid
+erDiagram
+    STUDENT {
+        int id PK
+        string student_id
+        string first_name
+        string last_name
+        date birth_date
+        string gender
+        int level_id FK
+        int class_id FK
+        date registration_date
+        string status
+        int created_by FK
+    }
+    
+    PARENT {
+        int id PK
+        string first_name
+        string last_name
+        string email
+        string phone
+        string address
+    }
+    
+    STUDENT_PARENT {
+        int id PK
+        int student_id FK
+        int parent_id FK
+        string relationship
+    }
+    
+    LEVEL {
+        int id PK
+        string name
+        string description
+    }
+    
+    CLASS {
+        int id PK
+        string name
+        string time_slot
+        int capacity
+        string academic_year
+    }
+    
+    PAYMENT {
+        int id PK
+        string payment_id
+        int student_id FK
+        date payment_date
+        decimal amount
+        string payment_type
+        string payment_method
+        string status
+        int created_by FK
+        string receipt_number
+    }
+    
+    ATTENDANCE {
+        int id PK
+        int student_id FK
+        date attendance_date
+        boolean present
+        string comment
+        boolean justified
+        int recorded_by FK
+    }
+    
+    REPORT_CARD {
+        int id PK
+        string report_id
+        int student_id FK
+        int trimester
+        string academic_year
+        date created_date
+        string status
+        int created_by FK
+    }
+    
+    GRADE {
+        int id PK
+        int report_card_id FK
+        int subject_id FK
+        decimal grade
+        string comment
+    }
+    
+    SUBJECT {
+        int id PK
+        string name
+        string description
+    }
+    
+    NOTIFICATION {
+        int id PK
+        string title
+        string content
+        date sent_date
+        string notification_type
+        string status
+        int sent_by FK
+    }
+    
+    NOTIFICATION_RECIPIENT {
+        int id PK
+        int notification_id FK
+        int parent_id FK
+        boolean read
+        date read_date
+    }
+    
+    USER {
+        int id PK
+        string username
+        string password_hash
+        string first_name
+        string last_name
+        string email
+        string role
+        date last_login
+    }
+    
+    STUDENT ||--o{ STUDENT_PARENT : has
+    PARENT ||--o{ STUDENT_PARENT : has
+    LEVEL ||--o{ STUDENT : contains
+    CLASS ||--o{ STUDENT : contains
+    STUDENT ||--o{ PAYMENT : makes
+    STUDENT ||--o{ ATTENDANCE : has
+    STUDENT ||--o{ REPORT_CARD : receives
+    REPORT_CARD ||--o{ GRADE : contains
+    SUBJECT ||--o{ GRADE : has
+    NOTIFICATION ||--o{ NOTIFICATION_RECIPIENT : sent_to
+    PARENT ||--o{ NOTIFICATION_RECIPIENT : receives
+    USER ||--o{ PAYMENT : records
+    USER ||--o{ ATTENDANCE : records
+    USER ||--o{ REPORT_CARD : creates
+    USER ||--o{ NOTIFICATION : sends 
+```
