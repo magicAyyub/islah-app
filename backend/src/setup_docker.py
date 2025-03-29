@@ -29,7 +29,6 @@ def create_env_file(env_path):
     db_host = get_user_input("Database host", default="db")
     db_port = get_user_input("Database port", default="5432")
     db_name = get_user_input("Database name", default="data")
-    admin_init_key = get_user_input("Admin initialization key", required=True)
 
     env_content = (
         f"DB_USER={db_user}\n"
@@ -37,7 +36,6 @@ def create_env_file(env_path):
         f"DB_HOST={db_host}\n"
         f"DB_PORT={db_port}\n"
         f"DB_NAME={db_name}\n"
-        f"ADMIN_INIT_KEY={admin_init_key}\n"
     )
 
     with open(env_path, "w") as env_file:

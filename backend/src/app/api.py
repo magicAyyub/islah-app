@@ -6,47 +6,33 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import inspect
 from src.utils.database import engine, get_db
-import src.utils.models as models
-from src.app.routes import (
-    users,
-    responsables,
-    eleves,
-    niveaux,
-    matieres,
-    classes,
-    creneaux,
-    classe_creneaux,
-    annees_scolaires,
-    inscriptions,
-    paiements,
-    cours,
-    seances,
-    absences,
-    auth,
-    init,
-    bulk_operations
+import src.models as models
+from src.app.routes import  (
+    auth, users, students, parents, teachers, classes, enrollments,
+    attendance, payments, invoices, report_cards, schedules,
+    notifications, messages, access_requests, configurations
 )
 
 from src.utils.settings import ORIGINS
 
 # Import des routers
-users_router = users.router
-responsables_router = responsables.router
-eleves_router = eleves.router
-niveaux_router = niveaux.router
-matieres_router = matieres.router
-classes_router = classes.router
-creneaux_router = creneaux.router
-classe_creneaux_router = classe_creneaux.router
-annees_scolaires_router = annees_scolaires.router
-inscriptions_router = inscriptions.router
-paiements_router = paiements.router
-cours_router = cours.router
-seances_router = seances.router
-absences_router = absences.router
 auth_router = auth.router
-init_router = init.router
-bulk_operations_router = bulk_operations.router
+users_router = users.router
+students_router = students.router
+parents_router = parents.router
+teachers_router = teachers.router
+classes_router = classes.router
+enrollments_router = enrollments.router
+attendance_router = attendance.router
+payments_router = payments.router
+invoices_router = invoices.router
+report_cards_router = report_cards.router
+schedules_router = schedules.router
+notifications_router = notifications.router
+messages_router = messages.router
+access_requests_router = access_requests.router
+configurations_router = configurations.router
+
 
 def create_tables_if_not_exist():
     """
@@ -59,22 +45,28 @@ def create_tables_if_not_exist():
     
     # List of all model classes
     model_classes = [
-        models.User,
-        models.ResponsableLegal,
-        models.Eleve,
-        models.Niveau,
-        models.Matiere,
-        models.Classe,
-        models.Creneau,
-        models.ClasseCreneau,
-        models.AnneeScolaire,
-        models.Inscription,
-        models.Paiement,
-        models.Recu,
-        models.ClasseMatiere,
-        models.Cours,
-        models.Seance,
-        models.Absence,
+        models.User, 
+        models.Student,      
+        models.Parent,       
+        models.ParentStudent,
+        models.Teacher,
+        models.Class,
+        models.TeacherClassAssignment,
+        models.Enrollment,
+        models.Attendance,
+        models.AbsenceJustification,
+        models.Payment,
+        models.Invoice,
+        models.InvoiceItem,
+        models.ReportCard,
+        models.Evaluation,
+        models.Schedule,
+        models.Notification,
+        models.Conversation,  # Add the new Conversation model
+        models.Message,
+        models.MessageRecipient,
+        models.AccessRequest,
+        models.Configuration
     ]
     
     for model_class in model_classes:
@@ -106,21 +98,20 @@ app.add_middleware(
 # Include all routes
 app.include_router(auth_router)
 app.include_router(users_router)
-app.include_router(responsables_router)
-app.include_router(eleves_router)
-app.include_router(niveaux_router)
-app.include_router(matieres_router)
+app.include_router(students_router)
+app.include_router(parents_router)
+app.include_router(teachers_router)
 app.include_router(classes_router)
-app.include_router(creneaux_router)
-app.include_router(classe_creneaux_router)
-app.include_router(annees_scolaires_router)
-app.include_router(inscriptions_router)
-app.include_router(paiements_router)
-app.include_router(cours_router)
-app.include_router(seances_router)
-app.include_router(absences_router)
-app.include_router(init_router)
-app.include_router(bulk_operations_router)
+app.include_router(enrollments_router)
+app.include_router(attendance_router)
+app.include_router(payments_router)
+app.include_router(invoices_router)
+app.include_router(report_cards_router)
+app.include_router(schedules_router)
+app.include_router(notifications_router)
+app.include_router(messages_router)
+app.include_router(access_requests_router)
+app.include_router(configurations_router)
 
 # Root endpoint to verify API connection
 @app.get("/")
