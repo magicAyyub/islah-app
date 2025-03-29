@@ -79,12 +79,35 @@ def create_tables_if_not_exist():
 # Create tables only if they don't exist
 create_tables_if_not_exist()
 
+# Add OpenAPI security configuration
+security_schemes = {
+    "Bearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+    }
+}
 
 app = FastAPI(
     title="Islah School API",
     description="API pour la gestion de l'école de la mosquée Islah",
-    version="1.0.0"
+    version="1.0.0",
+    openapi_tags=[
+        {"name": "Authentication", "description": "Operations related to authentication"},
+        {"name": "Users", "description": "Operations related to users"},
+        # Add other tags as needed
+    ],
+    # Add security schemes to OpenAPI documentation
+    swagger_ui_parameters={"persistAuthorization": True}
 )
+
+# Configure security for OpenAPI documentation
+app.swagger_ui_init_oauth = {
+    "usePkceWithAuthorizationCodeGrant": True,
+    "clientId": "",
+    "clientSecret": "",
+    "scopes": ["read:api"],
+}
 
 # Add CORS middleware
 app.add_middleware(
