@@ -7,7 +7,7 @@ Il existe plusieurs niveaux:  2 niveaux de maternelle, 3 niveaux de primaire et 
 - Classe du matin => 10h-13h avec une pause de 11h20 jusqu'à 12h00. 
 - Classe de l'après-midi => 14h-17h avec une pause de 15h20 jusqu'à 16h00.
 
-D'autres classes sont crée en fonction des besoins.
+D'autres classes seront crée en fonction des besoins.
 
 Chaque classe a une place limitée d'élèves et on peu avoir plusieurs classes pour un même niveau. Les classes sont crée en fonction des besoins. 
 
@@ -23,6 +23,6 @@ Le système actuel est très peu fiable et peu pratique. L'objectif est de crée
 
 Un essie de backend a été fait avec FastAPI, un framework python pour la création d'API REST. Il est à refaire car il n'est pas adapté au cas spécifique de l'école. Une attention particulière sera accordé à la modélisation de la base de données avant de commencer le développement.
 
-## MCD (à revoir)
+## MCD (peu évoluer)
 
 ![MCD](mcd.png)
