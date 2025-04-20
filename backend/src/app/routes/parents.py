@@ -1,180 +1,246 @@
-# src/routes/parents.py
-
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Path
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from sqlalchemy.exc import SQLAlchemyError
+from typing import List, Optional, Dict, Any
+import bcrypt
 
 from src.utils.database import get_db
 from src.utils.dependencies import get_current_user, check_admin_or_staff_role
-from src.models import Parent, Student, ParentStudent
-from src.schemas import (
-    ParentCreate, ParentUpdate, ParentResponse, 
-    ParentDetailResponse, ParentStudentCreate  # Changed from ParentStudentRelationCreate to ParentStudentCreate
+from src.utils.pagination import get_pagination_meta
+from src.models import Parent, User
+from src.schemas import ParentCreate, ParentUpdate, ParentResponse, ParentDetailResponse
+from src.utils.error_handlers import (
+    ResourceNotFoundError, 
+    ResourceAlreadyExistsError,
+    ValidationError,
+    DatabaseError
 )
+from src.utils.response_models import APIResponse, PaginatedResponse, PaginationMeta
 
 router = APIRouter(
     prefix="/parents",
     tags=["Parents"],
     dependencies=[Depends(get_current_user)],
-    responses={404: {"description": "Not found"}},
+    responses={
+        404: {"description": "Parent not found"},
+        400: {"description": "Bad request"},
+        403: {"description": "Not authorized"},
+        500: {"description": "Internal server error"}
+    },
 )
 
-@router.get("/", response_model=List[ParentResponse])
+@router.get(
+    "/", 
+    response_model=PaginatedResponse[ParentResponse],
+    summary="Get all parents",
+    description="Retrieve a list of all parents with optional filtering and pagination"
+)
 async def read_parents(
-    skip: int = 0,
-    limit: int = 100,
-    name: Optional[str] = None,
-    email: Optional[str] = None,
-    student_id: Optional[int] = None,
-    is_active: bool = True,
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(100, ge=1, le=100, description="Maximum number of records to return"),
+    name: Optional[str] = Query(None, description="Filter by name (first or last)"),
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
-    query = db.query(Parent).filter(Parent.is_active == is_active)
-    
-    if name:
-        query = query.filter(
-            (Parent.first_name.ilike(f"%{name}%")) | 
-            (Parent.last_name.ilike(f"%{name}%"))
+    try:
+        # Build the query
+        query = db.query(Parent)
+        
+        # Apply filters
+        if name:
+            query = query.filter(
+                (Parent.first_name.ilike(f"%{name}%")) | 
+                (Parent.last_name.ilike(f"%{name}%"))
+            )
+        
+        # Get total count for pagination
+        total = query.count()
+        
+        # Apply pagination
+        parents = query.offset(skip).limit(limit).all()
+        
+        # Calculate pagination metadata
+        pagination = get_pagination_meta(total, skip, limit)
+        
+        return PaginatedResponse(
+            success=True,
+            data=parents,
+            message=f"Retrieved {len(parents)} parents",
+            pagination=pagination
         )
-    
-    if email:
-        query = query.filter(Parent.email.ilike(f"%{email}%"))
-    
-    if student_id:
-        query = query.join(ParentStudent).filter(
-            ParentStudent.student_id == student_id
-        )
-    
-    parents = query.offset(skip).limit(limit).all()
-    return parents
+    except SQLAlchemyError as e:
+        raise DatabaseError(detail="Error retrieving parents", original_error=e)
 
-@router.get("/{parent_id}", response_model=ParentDetailResponse)
+@router.get(
+    "/count", 
+    response_model=APIResponse[int],
+    summary="Count parents",
+    description="Get the total number of parents"
+)
+async def count_parents(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    try:
+        total_parents = db.query(Parent).count()
+        return APIResponse(
+            success=True,
+            data=total_parents,
+            message="Total number of parents"
+        )
+    except SQLAlchemyError as e:
+        raise DatabaseError(detail="Error counting parents", original_error=e)
+
+@router.get(
+    "/{parent_id}", 
+    response_model=APIResponse[ParentDetailResponse],
+    summary="Get parent by ID",
+    description="Retrieve detailed information about a specific parent"
+)
 async def read_parent(
-    parent_id: int,
+    parent_id: int = Path(..., ge=1, description="The ID of the parent to retrieve"),
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
-    parent = db.query(Parent).filter(Parent.id == parent_id).first()
-    if parent is None:
-        raise HTTPException(status_code=404, detail="Parent not found")
-    return parent
+    try:
+        db_parent = db.query(Parent).filter(Parent.id == parent_id).first()
+        if db_parent is None:
+            raise ResourceNotFoundError("Parent", parent_id)
+        
+        return APIResponse(
+            success=True,
+            data=db_parent,
+            message=f"Retrieved parent {parent_id}"
+        )
+    except ResourceNotFoundError as e:
+        raise e
+    except SQLAlchemyError as e:
+        raise DatabaseError(detail=f"Error retrieving parent {parent_id}", original_error=e)
 
-@router.post("/", response_model=ParentResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/", 
+    response_model=APIResponse[ParentDetailResponse], 
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a new parent",
+    description="Create a new parent profile with the provided details"
+)
 async def create_parent(
     parent: ParentCreate,
     db: Session = Depends(get_db),
-    current_user = Depends(check_admin_or_staff_role)
+    current_user: User = Depends(check_admin_or_staff_role)
 ):
-    # Check if email is unique
-    if parent.email:
-        existing = db.query(Parent).filter(Parent.email == parent.email).first()
-        if existing:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Parent with this email already exists"
-            )
-    
-    db_parent = Parent(
-        last_name=parent.last_name,
-        first_name=parent.first_name,
-        email=parent.email,
-        phone=parent.phone,
-        address=parent.address,
-        occupation=parent.occupation,
-        user_id=parent.user_id
-    )
-    
-    db.add(db_parent)
-    db.commit()
-    db.refresh(db_parent)
-    
-    return db_parent
-
-@router.put("/{parent_id}", response_model=ParentResponse)
-async def update_parent(
-    parent_id: int,
-    parent: ParentUpdate,
-    db: Session = Depends(get_db),
-    current_user = Depends(check_admin_or_staff_role)
-):
-    db_parent = db.query(Parent).filter(Parent.id == parent_id).first()
-    if db_parent is None:
-        raise HTTPException(status_code=404, detail="Parent not found")
-    
-    # Check if email is unique if it's being updated
-    if parent.email and parent.email != db_parent.email:
-        existing = db.query(Parent).filter(Parent.email == parent.email).first()
-        if existing:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Parent with this email already exists"
-            )
-    
-    update_data = parent.dict(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(db_parent, key, value)
-    
-    db.commit()
-    db.refresh(db_parent)
-    
-    return db_parent
-
-@router.delete("/{parent_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_parent(
-    parent_id: int,
-    db: Session = Depends(get_db),
-    current_user = Depends(check_admin_or_staff_role)
-):
-    db_parent = db.query(Parent).filter(Parent.id == parent_id).first()
-    if db_parent is None:
-        raise HTTPException(status_code=404, detail="Parent not found")
-    
-    # Instead of deleting, mark as inactive
-    db_parent.is_active = False
-    db.commit()
-    
-    return None
-
-@router.post("/{parent_id}/students", response_model=ParentStudentCreate)  # Changed response_model too
-async def add_student_to_parent(
-    parent_id: int,
-    relation: ParentStudentCreate,  # Changed from ParentStudentRelationCreate to ParentStudentCreate
-    db: Session = Depends(get_db),
-    current_user = Depends(check_admin_or_staff_role)
-):
-    # Check if parent exists
-    parent = db.query(Parent).filter(Parent.id == parent_id).first()
-    if not parent:
-        raise HTTPException(status_code=404, detail="Parent not found")
-    
-    # Check if student exists
-    student = db.query(Student).filter(Student.id == relation.student_id).first()
-    if not student:
-        raise HTTPException(status_code=404, detail="Student not found")
-    
-    # Check if relation already exists
-    existing = db.query(ParentStudent).filter(
-        ParentStudent.parent_id == parent_id,
-        ParentStudent.student_id == relation.student_id
-    ).first()
-    
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Relation between this parent and student already exists"
+    try:
+        # Check if username exists
+        existing_user = db.query(User).filter(User.username == parent.username).first()
+        if existing_user:
+            raise ResourceAlreadyExistsError("User", "username", parent.username)
+        
+        # Create user
+        hashed_password = bcrypt.hashpw(parent.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        full_name = f"{parent.first_name} {parent.last_name}"
+        
+        new_user = User(
+            username=parent.username,
+            password_hash=hashed_password,
+            full_name=full_name,
+            role=parent.user_role
         )
-    
-    db_relation = ParentStudent(
-        parent_id=parent_id,
-        student_id=relation.student_id,
-        relationship=relation.relationship,  # Changed from relationship_type to match our model
-        is_primary_contact=relation.is_primary_contact,  # Changed from is_emergency_contact
-        can_pickup=relation.can_pickup  # Changed from is_authorized_pickup
-    )
-    
-    db.add(db_relation)
-    db.commit()
-    db.refresh(db_relation)
-    
-    return db_relation
+        
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        
+        # Create parent profile
+        db_parent = Parent(
+            first_name=parent.first_name,
+            last_name=parent.last_name,
+            phone=parent.phone,
+            email=parent.email,
+            address=parent.address,
+            user_id=new_user.id
+        )
+        
+        db.add(db_parent)
+        db.commit()
+        db.refresh(db_parent)
+        
+        return APIResponse(
+            success=True,
+            data=db_parent,
+            message=f"Parent {parent.first_name} {parent.last_name} created successfully"
+        )
+    except ResourceAlreadyExistsError as e:
+        raise e
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise DatabaseError(detail="Error creating parent", original_error=e)
+
+@router.put(
+    "/{parent_id}", 
+    response_model=APIResponse[ParentResponse],
+    summary="Update a parent",
+    description="Update an existing parent profile with the provided details"
+)
+async def update_parent(
+    parent_id: int = Path(..., ge=1, description="The ID of the parent to update"),
+    parent: ParentUpdate = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(check_admin_or_staff_role)
+):
+    try:
+        # Check if parent exists
+        db_parent = db.query(Parent).filter(Parent.id == parent_id).first()
+        if db_parent is None:
+            raise ResourceNotFoundError("Parent", parent_id)
+        
+        # Update parent
+        update_data = parent.dict(exclude_unset=True)
+        for key, value in update_data.items():
+            setattr(db_parent, key, value)
+        
+        db.commit()
+        db.refresh(db_parent)
+        
+        return APIResponse(
+            success=True,
+            data=db_parent,
+            message=f"Parent {parent_id} updated successfully"
+        )
+    except ResourceNotFoundError as e:
+        raise e
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise DatabaseError(detail=f"Error updating parent {parent_id}", original_error=e)
+
+@router.delete(
+    "/{parent_id}", 
+    response_model=APIResponse[Dict[str, Any]],
+    status_code=status.HTTP_200_OK,
+    summary="Delete a parent",
+    description="Delete a parent profile by ID"
+)
+async def delete_parent(
+    parent_id: int = Path(..., ge=1, description="The ID of the parent to delete"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(check_admin_or_staff_role)
+):
+    try:
+        # Check if parent exists
+        db_parent = db.query(Parent).filter(Parent.id == parent_id).first()
+        if db_parent is None:
+            raise ResourceNotFoundError("Parent", parent_id)
+        
+        # Delete parent
+        db.delete(db_parent)
+        db.commit()
+        
+        return APIResponse(
+            success=True,
+            data={"id": parent_id},
+            message=f"Parent {parent_id} deleted successfully"
+        )
+    except ResourceNotFoundError as e:
+        raise e
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise DatabaseError(detail=f"Error deleting parent {parent_id}", original_error=e)

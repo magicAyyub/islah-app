@@ -1,208 +1,373 @@
 # src/routes/notifications.py
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Path
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from sqlalchemy.exc import SQLAlchemyError
+from typing import List, Dict, Optional, Any
 from datetime import datetime
 
 from src.utils.database import get_db
 from src.utils.dependencies import get_current_user, check_admin_or_staff_role
+from src.utils.pagination import get_pagination_meta
 from src.models import Notification, User
-from src.schemas import (
-    NotificationCreate, NotificationUpdate, NotificationResponse, 
-    BulkNotificationCreate
+from src.schemas import NotificationCreate, NotificationUpdate, NotificationResponse
+from src.utils.error_handlers import (
+    ResourceNotFoundError,
+    ValidationError,
+    DatabaseError
 )
-from src.utils.notifications import send_notification
+from src.utils.response_models import APIResponse, PaginatedResponse, PaginationMeta
 
 router = APIRouter(
     prefix="/notifications",
     tags=["Notifications"],
     dependencies=[Depends(get_current_user)],
-    responses={404: {"description": "Not found"}},
+    responses={
+        404: {"description": "Notification not found"},
+        400: {"description": "Bad request"},
+        403: {"description": "Not authorized"},
+        500: {"description": "Internal server error"}
+    },
 )
 
-@router.get("/", response_model=List[NotificationResponse])
+@router.get(
+    "/", 
+    response_model=PaginatedResponse[NotificationResponse],
+    summary="Get all notifications",
+    description="Retrieve a list of all notifications with optional filtering and pagination"
+)
 async def read_notifications(
-    skip: int = 0,
-    limit: int = 100,
-    user_id: Optional[int] = None,
-    is_read: Optional[bool] = None,
-    category: Optional[str] = None,
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(100, ge=1, le=100, description="Maximum number of records to return"),
+    recipient_id: Optional[int] = Query(None, description="Filter by recipient ID"),
+    recipient_type: Optional[str] = Query(None, description="Filter by recipient type"),
+    is_read: Optional[bool] = Query(None, description="Filter by read status"),
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
-    query = db.query(Notification)
-    
-    # If no user_id is provided, show only current user's notifications
-    if user_id:
-        if current_user.role != "admin" and user_id != current_user.id:
+    try:
+        # Build the query
+        query = db.query(Notification)
+        
+        # Apply filters
+        if recipient_id:
+            query = query.filter(Notification.recipient_id == recipient_id)
+        
+        if recipient_type:
+            query = query.filter(Notification.recipient_type == recipient_type)
+        
+        if is_read is not None:
+            query = query.filter(Notification.read_at != None if is_read else Notification.read_at == None)
+        
+        # Get total count for pagination
+        total = query.count()
+        
+        # Apply pagination
+        notifications = query.offset(skip).limit(limit).all()
+        
+        # Calculate pagination metadata
+        pagination = get_pagination_meta(total, skip, limit)
+        
+        return PaginatedResponse(
+            success=True,
+            data=notifications,
+            message=f"Retrieved {len(notifications)} notification records",
+            pagination=pagination
+        )
+    except SQLAlchemyError as e:
+        raise DatabaseError(detail="Error retrieving notifications", original_error=str(e))
+
+@router.get(
+    "/count",
+    response_model=APIResponse[int],
+    summary="Count notifications",
+    description="Get the total number of notifications with optional filtering"
+)
+async def count_notifications(
+    recipient_id: Optional[int] = Query(None, description="Filter by recipient ID"),
+    recipient_type: Optional[str] = Query(None, description="Filter by recipient type"),
+    is_read: Optional[bool] = Query(None, description="Filter by read status"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    try:
+        query = db.query(Notification)
+        
+        # Apply filters
+        if recipient_id:
+            query = query.filter(Notification.recipient_id == recipient_id)
+        
+        if recipient_type:
+            query = query.filter(Notification.recipient_type == recipient_type)
+        
+        if is_read is not None:
+            query = query.filter(Notification.read_at != None if is_read else Notification.read_at == None)
+            
+        total_notifications = query.count()
+        
+        return APIResponse(
+            success=True,
+            data=total_notifications,
+            message="Total number of notifications"
+        )
+    except SQLAlchemyError as e:
+        raise DatabaseError(detail="Error counting notifications", original_error=str(e))
+
+@router.get(
+    "/{notification_id}", 
+    response_model=APIResponse[NotificationResponse],
+    summary="Get notification by ID",
+    description="Retrieve detailed information about a specific notification"
+)
+async def read_notification(
+    notification_id: int = Path(..., ge=1, description="The ID of the notification to retrieve"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    try:
+        db_notification = db.query(Notification).filter(Notification.id == notification_id).first()
+        if db_notification is None:
+            raise ResourceNotFoundError("Notification", notification_id)
+        
+        # Check authorization - users can only view their own notifications unless admin/staff
+        if db_notification.recipient_id != current_user.id and current_user.role not in ["admin", "staff"]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not authorized to view other users' notifications"
+                detail="Not authorized to view this notification"
             )
-        query = query.filter(Notification.user_id == user_id)
-    else:
-        query = query.filter(Notification.user_id == current_user.id)
-    
-    if is_read is not None:
-        query = query.filter(Notification.is_read == is_read)
-    
-    if category:
-        query = query.filter(Notification.category == category)
-    
-    notifications = query.order_by(Notification.created_at.desc()).offset(skip).limit(limit).all()
-    
-    return notifications
-
-@router.get("/unread-count", response_model=int)
-async def get_unread_count(
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
-):
-    count = db.query(Notification).filter(
-        Notification.user_id == current_user.id,
-        Notification.is_read == False
-    ).count()
-    
-    return count
-
-@router.get("/{notification_id}", response_model=NotificationResponse)
-async def read_notification(
-    notification_id: int,
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
-):
-    notification = db.query(Notification).filter(Notification.id == notification_id).first()
-    if notification is None:
-        raise HTTPException(status_code=404, detail="Notification not found")
-    
-    # Check if user is authorized to view this notification
-    if notification.user_id != current_user.id and current_user.role != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to view this notification"
+        
+        return APIResponse(
+            success=True,
+            data=db_notification,
+            message=f"Retrieved notification {notification_id}"
         )
-    
-    return notification
+    except ResourceNotFoundError as e:
+        raise e
+    except HTTPException as e:
+        raise e
+    except SQLAlchemyError as e:
+        raise DatabaseError(detail=f"Error retrieving notification {notification_id}", original_error=str(e))
 
-@router.post("/", response_model=NotificationResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/", 
+    response_model=APIResponse[NotificationResponse], 
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a new notification",
+    description="Create a new notification with the provided details"
+)
 async def create_notification(
     notification: NotificationCreate,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user = Depends(check_admin_or_staff_role)
+    current_user: User = Depends(check_admin_or_staff_role)
 ):
-    # Check if user exists
-    user = db.query(User).filter(User.id == notification.user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    db_notification = Notification(
-        user_id=notification.user_id,
-        title=notification.title,
-        message=notification.message,
-        category=notification.category,
-        link=notification.link,
-        created_at=datetime.utcnow(),
-        is_read=False
-    )
-    
-    db.add(db_notification)
-    db.commit()
-    db.refresh(db_notification)
-    
-    # Send notification in background
-    background_tasks.add_task(
-        send_notification,
-        user_id=notification.user_id,
-        title=notification.title,
-        message=notification.message
-    )
-    
-    return db_notification
-
-@router.post("/bulk", response_model=List[NotificationResponse], status_code=status.HTTP_201_CREATED)
-async def create_bulk_notifications(
-    notification: BulkNotificationCreate,
-    background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db),
-    current_user = Depends(check_admin_or_staff_role)
-):
-    created_notifications = []
-    
-    for user_id in notification.user_ids:
-        # Check if user exists
-        user = db.query(User).filter(User.id == user_id).first()
-        if not user:
-            continue  # Skip non-existent users
+    try:
+        # Validate recipient existence if needed
+        # (Add logic here if you need to validate recipient_id exists in its respective table)
         
+        # Create notification
         db_notification = Notification(
-            user_id=user_id,
-            title=notification.title,
+            recipient_type=notification.recipient_type,
+            recipient_id=notification.recipient_id,
             message=notification.message,
-            category=notification.category,
-            link=notification.link,
-            created_at=datetime.utcnow(),
-            is_read=False
+            type=notification.type,
+            created_at=datetime.now()
         )
         
         db.add(db_notification)
-        created_notifications.append(db_notification)
+        db.commit()
+        db.refresh(db_notification)
         
-        # Send notification in background
-        background_tasks.add_task(
-            send_notification,
-            user_id=user_id,
-            title=notification.title,
-            message=notification.message
+        return APIResponse(
+            success=True,
+            data=db_notification,
+            message=f"Notification created successfully for {notification.recipient_type} {notification.recipient_id}"
         )
-    
-    db.commit()
-    
-    # Refresh all notifications
-    for notification in created_notifications:
-        db.refresh(notification)
-    
-    return created_notifications
+    except ValidationError as e:
+        raise e
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise DatabaseError(detail="Error creating notification", original_error=str(e))
 
-@router.put("/{notification_id}/read", response_model=NotificationResponse)
-async def mark_notification_as_read(
-    notification_id: int,
+@router.put(
+    "/{notification_id}", 
+    response_model=APIResponse[NotificationResponse],
+    summary="Update a notification",
+    description="Update an existing notification with the provided details"
+)
+async def update_notification(
+    notification_id: int = Path(..., ge=1, description="The ID of the notification to update"),
+    notification: NotificationUpdate = None,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
-    notification = db.query(Notification).filter(Notification.id == notification_id).first()
-    if notification is None:
-        raise HTTPException(status_code=404, detail="Notification not found")
-    
-    # Check if user is authorized to update this notification
-    if notification.user_id != current_user.id and current_user.role != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to update this notification"
+    try:
+        # Check if notification exists
+        db_notification = db.query(Notification).filter(Notification.id == notification_id).first()
+        if db_notification is None:
+            raise ResourceNotFoundError("Notification", notification_id)
+        
+        # Only allow updating read status if the notification belongs to the current user
+        if db_notification.recipient_id != current_user.id and current_user.role not in ["admin", "staff"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to update this notification"
+            )
+        
+        # Update notification
+        update_data = notification.dict(exclude_unset=True)
+        for key, value in update_data.items():
+            setattr(db_notification, key, value)
+        
+        db.commit()
+        db.refresh(db_notification)
+        
+        return APIResponse(
+            success=True,
+            data=db_notification,
+            message=f"Notification {notification_id} updated successfully"
         )
-    
-    notification.is_read = True
-    notification.read_at = datetime.utcnow()
-    
-    db.commit()
-    db.refresh(notification)
-    
-    return notification
+    except ResourceNotFoundError as e:
+        raise e
+    except HTTPException as e:
+        raise e
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise DatabaseError(detail=f"Error updating notification {notification_id}", original_error=str(e))
 
-@router.put("/mark-all-read", response_model=int)
+@router.delete(
+    "/{notification_id}", 
+    response_model=APIResponse[Dict[str, Any]],
+    status_code=status.HTTP_200_OK,
+    summary="Delete a notification",
+    description="Delete a notification by ID"
+)
+async def delete_notification(
+    notification_id: int = Path(..., ge=1, description="The ID of the notification to delete"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(check_admin_or_staff_role)
+):
+    try:
+        # Check if notification exists
+        db_notification = db.query(Notification).filter(Notification.id == notification_id).first()
+        if db_notification is None:
+            raise ResourceNotFoundError("Notification", notification_id)
+        
+        # Delete notification
+        db.delete(db_notification)
+        db.commit()
+        
+        return APIResponse(
+            success=True,
+            data={"id": notification_id},
+            message=f"Notification {notification_id} deleted successfully"
+        )
+    except ResourceNotFoundError as e:
+        raise e
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise DatabaseError(detail=f"Error deleting notification {notification_id}", original_error=str(e))
+
+@router.post(
+    "/{notification_id}/mark-as-read", 
+    response_model=APIResponse[NotificationResponse],
+    summary="Mark notification as read",
+    description="Mark a notification as read by setting the read_at timestamp"
+)
+async def mark_notification_as_read(
+    notification_id: int = Path(..., ge=1, description="The ID of the notification to mark as read"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    try:
+        # Check if notification exists
+        db_notification = db.query(Notification).filter(Notification.id == notification_id).first()
+        if db_notification is None:
+            raise ResourceNotFoundError("Notification", notification_id)
+        
+        # Only allow marking as read if the notification belongs to the current user
+        if db_notification.recipient_id != current_user.id and current_user.role not in ["admin", "staff"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to update this notification"
+            )
+        
+        # Mark as read
+        db_notification.read_at = datetime.now()
+        
+        db.commit()
+        db.refresh(db_notification)
+        
+        return APIResponse(
+            success=True,
+            data=db_notification,
+            message=f"Notification {notification_id} marked as read"
+        )
+    except ResourceNotFoundError as e:
+        raise e
+    except HTTPException as e:
+        raise e
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise DatabaseError(detail=f"Error marking notification {notification_id} as read", original_error=str(e))
+
+@router.get(
+    "/unread/count",
+    response_model=APIResponse[int],
+    summary="Count unread notifications",
+    description="Get the total number of unread notifications for the current user"
+)
+async def count_unread_notifications(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    try:
+        query = db.query(Notification).filter(
+            Notification.recipient_id == current_user.id,
+            Notification.read_at == None
+        )
+        
+        unread_count = query.count()
+        
+        return APIResponse(
+            success=True,
+            data=unread_count,
+            message="Number of unread notifications"
+        )
+    except SQLAlchemyError as e:
+        raise DatabaseError(detail="Error counting unread notifications", original_error=str(e))
+
+@router.post(
+    "/mark-all-as-read",
+    response_model=APIResponse[Dict[str, Any]],
+    summary="Mark all notifications as read",
+    description="Mark all notifications of the current user as read"
+)
 async def mark_all_notifications_as_read(
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
-    result = db.query(Notification).filter(
-        Notification.user_id == current_user.id,
-        Notification.is_read == False
-    ).update({
-        "is_read": True,
-        "read_at": datetime.utcnow()
-    })
-    
-    db.commit()
-    
-    return result  # Returns number of updated notifications
+    try:
+        # Find all unread notifications for this user
+        unread_notifications = db.query(Notification).filter(
+            Notification.recipient_id == current_user.id,
+            Notification.read_at == None
+        ).all()
+        
+        # Mark all as read
+        now = datetime.now()
+        count = 0
+        
+        for notification in unread_notifications:
+            notification.read_at = now
+            count += 1
+        
+        db.commit()
+        
+        return APIResponse(
+            success=True,
+            data={"count": count},
+            message=f"{count} notifications marked as read"
+        )
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise DatabaseError(detail="Error marking all notifications as read", original_error=str(e))

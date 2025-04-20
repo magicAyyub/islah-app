@@ -2,36 +2,29 @@
 This module contains the FastAPI application and its configuration.
 """
 
+# Import necessary modules
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.utils import get_openapi
 from sqlalchemy import inspect
-from src.utils.database import engine, get_db
+from src.utils.database import engine
 import src.models as models
-from src.app.routes import  (
-    auth, users, students, parents, teachers, classes, enrollments,
-    attendance, payments, invoices, report_cards, schedules,
-    notifications, messages, access_requests, configurations
+from src.app.routes import (
+    users, 
+    students, 
+    parents, 
+    teachers, 
+    classrooms, 
+    levels, 
+    subjects, 
+    grades, 
+    payments, 
+    attendances, 
+    notifications, 
+    auth
 )
 
 from src.utils.settings import ORIGINS
-
-# Import des routers
-auth_router = auth.router
-users_router = users.router
-students_router = students.router
-parents_router = parents.router
-teachers_router = teachers.router
-classes_router = classes.router
-enrollments_router = enrollments.router
-attendance_router = attendance.router
-payments_router = payments.router
-invoices_router = invoices.router
-report_cards_router = report_cards.router
-schedules_router = schedules.router
-notifications_router = notifications.router
-messages_router = messages.router
-access_requests_router = access_requests.router
-configurations_router = configurations.router
 
 
 def create_tables_if_not_exist():
@@ -46,27 +39,16 @@ def create_tables_if_not_exist():
     # List of all model classes
     model_classes = [
         models.User, 
-        models.Student,      
-        models.Parent,       
-        models.ParentStudent,
+        models.Parent, 
+        models.Level,
         models.Teacher,
-        models.Class,
-        models.TeacherClassAssignment,
-        models.Enrollment,
-        models.Attendance,
-        models.AbsenceJustification,
+        models.Classroom,
+        models.Student,                
+        models.Subject,
+        models.Grade,
         models.Payment,
-        models.Invoice,
-        models.InvoiceItem,
-        models.ReportCard,
-        models.Evaluation,
-        models.Schedule,
+        models.Attendance,
         models.Notification,
-        models.Conversation,  # Add the new Conversation model
-        models.Message,
-        models.MessageRecipient,
-        models.AccessRequest,
-        models.Configuration
     ]
     
     for model_class in model_classes:
@@ -79,15 +61,6 @@ def create_tables_if_not_exist():
 # Create tables only if they don't exist
 create_tables_if_not_exist()
 
-# Add OpenAPI security configuration
-security_schemes = {
-    "Bearer": {
-        "type": "http",
-        "scheme": "bearer",
-        "bearerFormat": "JWT",
-    }
-}
-
 app = FastAPI(
     title="Islah School API",
     description="API pour la gestion de l'école de la mosquée Islah",
@@ -97,17 +70,44 @@ app = FastAPI(
         {"name": "Users", "description": "Operations related to users"},
         # Add other tags as needed
     ],
-    # Add security schemes to OpenAPI documentation
     swagger_ui_parameters={"persistAuthorization": True}
 )
 
-# Configure security for OpenAPI documentation
-app.swagger_ui_init_oauth = {
-    "usePkceWithAuthorizationCodeGrant": True,
-    "clientId": "",
-    "clientSecret": "",
-    "scopes": ["read:api"],
-}
+# Custom OpenAPI schema to properly configure OAuth2 password flow
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    
+    openapi_schema = get_openapi(
+        title="Islah School API",
+        version="1.0.0",
+        description="API pour la gestion de l'école de la mosquée Islah",
+        routes=app.routes,
+    )
+    
+    # Configure OAuth2 password flow
+    openapi_schema["components"]["securitySchemes"] = {
+        "OAuth2PasswordBearer": {
+            "type": "oauth2",
+            "flows": {
+                "password": {
+                    "tokenUrl": "/token",
+                    "scopes": {}
+                }
+            }
+        }
+    }
+    
+    # Apply security to all operations except /token
+    for path_url, path_item in openapi_schema["paths"].items():
+        if path_url != "/token":  # Skip the token endpoint
+            for operation in path_item.values():
+                operation["security"] = [{"OAuth2PasswordBearer": []}]
+    
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+app.openapi = custom_openapi
 
 # Add CORS middleware
 app.add_middleware(
@@ -118,25 +118,25 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-# Include all routes
-app.include_router(auth_router)
-app.include_router(users_router)
-app.include_router(students_router)
-app.include_router(parents_router)
-app.include_router(teachers_router)
-app.include_router(classes_router)
-app.include_router(enrollments_router)
-app.include_router(attendance_router)
-app.include_router(payments_router)
-app.include_router(invoices_router)
-app.include_router(report_cards_router)
-app.include_router(schedules_router)
-app.include_router(notifications_router)
-app.include_router(messages_router)
-app.include_router(access_requests_router)
-app.include_router(configurations_router)
+# Include routers
+app.include_router(auth.router)
+app.include_router(users.router)
+app.include_router(students.router)
+app.include_router(parents.router)
+app.include_router(teachers.router)
+app.include_router(classrooms.router)
+app.include_router(levels.router)
+app.include_router(subjects.router)
+app.include_router(grades.router)
+app.include_router(payments.router)
+app.include_router(attendances.router)
+app.include_router(notifications.router)
 
 # Root endpoint to verify API connection
 @app.get("/")
-async def root() -> dict:
-    return {"message": "Welcome to the Islah School Management API!"}
+async def root():
+    return {
+        "message": "Welcome to Islah School API",
+        "docs": "/docs",
+        "redoc": "/redoc"
+    }

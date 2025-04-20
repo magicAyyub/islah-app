@@ -48,18 +48,16 @@ async def create_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(check_admin_role)
 ):
-    db_user = db.query(User).filter(User.email == user.email).first()
+    db_user = db.query(User).filter(User.username == user.username).first()
     if db_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(status_code=400, detail="Username already registered")
     
     hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     
     db_user = User(
-        email=user.email,
-        password=hashed_password,
-        last_name=user.last_name,
-        first_name=user.first_name,
-        phone=user.phone,
+        username=user.username,
+        password_hash=hashed_password,
+        full_name=user.full_name,
         role=user.role
     )
     
