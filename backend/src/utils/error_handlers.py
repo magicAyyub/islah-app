@@ -1,7 +1,6 @@
 # src/utils/error_handlers.py
 
 from fastapi import HTTPException, status
-from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, List, Union
 import logging
 
@@ -122,4 +121,3 @@ class DatabaseError(APIError):
             error_code="DATABASE_ERROR",
             error_details=error_details
         )
-

@@ -3,8 +3,10 @@ This module contains the FastAPI application and its configuration.
 """
 
 # Import necessary modules
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 from fastapi.openapi.utils import get_openapi
 from sqlalchemy import inspect
 from src.utils.database import engine
@@ -25,7 +27,16 @@ from src.app.routes import (
 )
 
 from src.utils.settings import ORIGINS
+from src.utils.error_handlers import APIError, ValidationError
+from src.utils.response_models import APIResponse, ErrorDetail
+import logging
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger("islah_school")
 
 def create_tables_if_not_exist():
     """
@@ -118,6 +129,58 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
+# Exception handlers
+@app.exception_handler(APIError)
+async def api_error_handler(request: Request, exc: APIError):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=APIResponse(
+            success=False,
+            error=ErrorDetail(
+                error_code=exc.error_code,
+                detail=exc.detail,
+                error_details=exc.error_details
+            )
+        ).dict()
+    )
+
+@app.exception_handler(ValidationError)
+async def validation_error_handler(request: Request, exc: ValidationError):
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content=APIResponse(
+            success=False,
+            error=ErrorDetail(
+                error_code="VALIDATION_ERROR",
+                detail="Validation error",
+                error_details={"errors": exc.error_details.get("errors", [])}
+            )
+        ).dict()
+    )
+
+@app.exception_handler(RequestValidationError)
+async def request_validation_exception_handler(request: Request, exc: RequestValidationError):
+    errors = []
+    for error in exc.errors():
+        error_info = {
+            "loc": error["loc"],
+            "msg": error["msg"],
+            "type": error["type"]
+        }
+        errors.append(error_info)
+    
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content=APIResponse(
+            success=False,
+            error=ErrorDetail(
+                error_code="VALIDATION_ERROR",
+                detail="Request validation error",
+                error_details={"errors": errors}
+            )
+        ).dict()
+    )
+
 # Include routers
 app.include_router(auth.router)
 app.include_router(users.router)
@@ -135,8 +198,12 @@ app.include_router(notifications.router)
 # Root endpoint to verify API connection
 @app.get("/")
 async def root():
-    return {
-        "message": "Welcome to Islah School API",
-        "docs": "/docs",
-        "redoc": "/redoc"
-    }
+    return APIResponse(
+        success=True,
+        message="Welcome to Islah School API",
+        data={
+            "docs": "/docs",
+            "redoc": "/redoc",
+            "version": "1.0.0"
+        }
+    )

@@ -21,8 +21,7 @@ Le système actuel est très peu fiable et peu pratique. L'objectif est de crée
 
 ## Notes
 
-Un essie de backend a été fait avec FastAPI, un framework python pour la création d'API REST. Il est à refaire car il n'est pas adapté au cas spécifique de l'école. Une attention particulière sera accordé à la modélisation de la base de données avant de commencer le développement.
-
+Un essaie de backend a été fait avec FastAPI, un framework python pour la création d'API REST. Il est très simple d'utilisation avec une documentation automatique afin de tester les différents endpoints. Il n'est pas encore terminé mais fonctionne. Il pourrait évoluer en fonction des besoins.
 ## MCD (peu évoluer)
 
 ![MCD](mcd.png)

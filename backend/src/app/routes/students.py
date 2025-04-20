@@ -7,11 +7,11 @@ from typing import List, Optional, Dict, Any
 
 from src.utils.database import get_db
 from src.utils.dependencies import get_current_user, check_admin_or_staff_role
-from src.utils.pagination import get_pagination_meta
 from src.models import Student, User, Parent, Classroom
 from src.schemas import StudentCreate, StudentUpdate, StudentResponse, StudentDetailResponse
-from src.utils.error_handlers import ResourceNotFoundError, ForeignKeyViolationError, DatabaseError
-from src.utils.response_models import APIResponse, PaginatedResponse, PaginationMeta
+from src.utils.error_handlers import ResourceNotFoundError, ForeignKeyViolationError, DatabaseError, ValidationError
+from src.utils.response_models import APIResponse, PaginatedResponse
+from src.utils.pagination import paginate_query
 
 router = APIRouter(
     prefix="/students",
@@ -57,52 +57,24 @@ async def read_students(
         if status:
             query = query.filter(Student.status == status)
         
-        # Get total count for pagination
-        total = query.count()
-        
-        # Apply pagination
-        students = query.offset(skip).limit(limit).all()
-        
-        # Calculate pagination metadata
-        pagination_meta = get_pagination_meta(total, skip, limit)
+        # Apply pagination and get metadata
+        students, pagination_meta = paginate_query(query, skip, limit)
         
         # Build response
         return PaginatedResponse(
             success=True,
             data=students,
             message=f"Retrieved {len(students)} students",
-            pagination=pagination_meta  # Use the dictionary directly
+            pagination=pagination_meta
         )
     except SQLAlchemyError as e:
         raise DatabaseError(detail="Error retrieving students", original_error=e)
 
-
-    
 @router.get(
-        "/count", 
-        response_model=APIResponse[int],
-        summary="Count students",
-        description="Get the total number of students"
-)
-async def count_students(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    try:
-        total_students = db.query(Student).count()
-        return APIResponse(
-            success=True,
-            data=total_students,
-            message="Total number of students"
-        )
-    except SQLAlchemyError as e:
-        raise DatabaseError(detail=str(e))
-
-@router.get(
-        "/{student_id}", 
-        response_model=APIResponse[StudentDetailResponse],
-        summary="Get student by ID",
-        description="Retrieve detailed information about a specific student"
+    "/{student_id}", 
+    response_model=APIResponse[StudentDetailResponse],
+    summary="Get student by ID",
+    description="Retrieve detailed information about a specific student"
 )
 async def read_student(
     student_id: int = Path(..., ge=1, description="The ID of the student to retrieve"),
@@ -122,14 +94,14 @@ async def read_student(
     except ResourceNotFoundError as e:
         raise e
     except SQLAlchemyError as e:
-        raise DatabaseError(detail=str(e))
+        raise DatabaseError(detail=f"Error retrieving student {student_id}", original_error=e)
 
 @router.post(
-        "/", 
-        response_model=APIResponse[StudentDetailResponse], 
-        status_code=status.HTTP_201_CREATED,
-        summary="Create a new student",
-        description="Create a new student profile with the provided details"
+    "/", 
+    response_model=APIResponse[StudentResponse], 
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a new student",
+    description="Create a new student with the provided details"
 )
 async def create_student(
     student: StudentCreate,
@@ -137,31 +109,41 @@ async def create_student(
     current_user: User = Depends(check_admin_or_staff_role)
 ):
     try:
-        # Check if username exists
-        existing_user = db.query(User).filter(User.username == student.username).first()
-        if existing_user:
-            raise ResourceAlreadyExistsError("User", "username", student.username)
-
-        # Validate foreign keys
-        if student.parent_id:
-            parent = db.query(Parent).filter(Parent.id == student.parent_id).first()
-            if not parent:
-                raise ForeignKeyViolationError(
-                    resource_type="Student",
-                    field="parent_id",
-                    value=student.parent_id,
-                    referenced_resource="Parent"
-                )
+        validation_errors = []
         
-        if student.current_class_id:
-            classroom = db.query(Classroom).filter(Classroom.id == student.current_class_id).first()
-            if not classroom:
-                raise ForeignKeyViolationError(
-                    resource_type="Student",
-                    field="current_class_id",
-                    value=student.current_class_id,
-                    referenced_resource="Classroom"
-                )
+        # Validate parent_id if provided
+        if student.parent_id is not None:
+            if student.parent_id <= 0:
+                validation_errors.append({
+                    "field": "parent_id",
+                    "message": f"Invalid parent_id: {student.parent_id}. Must be a positive integer or null."
+                })
+            else:
+                parent = db.query(Parent).filter(Parent.id == student.parent_id).first()
+                if not parent:
+                    validation_errors.append({
+                        "field": "parent_id",
+                        "message": f"Parent with ID {student.parent_id} does not exist."
+                    })
+        
+        # Validate current_class_id if provided
+        if student.current_class_id is not None:
+            if student.current_class_id <= 0:
+                validation_errors.append({
+                    "field": "current_class_id",
+                    "message": f"Invalid current_class_id: {student.current_class_id}. Must be a positive integer or null."
+                })
+            else:
+                classroom = db.query(Classroom).filter(Classroom.id == student.current_class_id).first()
+                if not classroom:
+                    validation_errors.append({
+                        "field": "current_class_id",
+                        "message": f"Classroom with ID {student.current_class_id} does not exist."
+                    })
+        
+        # If there are validation errors, raise them
+        if validation_errors:
+            raise ValidationError(errors=validation_errors)
         
         # Create student
         db_student = Student(
@@ -184,17 +166,20 @@ async def create_student(
             data=db_student,
             message=f"Student {student.first_name} {student.last_name} created successfully"
         )
-    except ForeignKeyViolationError as e:
+    except ValidationError as e:
         raise e
     except SQLAlchemyError as e:
         db.rollback()
         raise DatabaseError(detail="Error creating student", original_error=e)
+    except Exception as e:
+        db.rollback()
+        raise DatabaseError(detail=f"Unexpected error creating student: {str(e)}")
 
 @router.put(
-        "/{student_id}", 
-        response_model=APIResponse[StudentDetailResponse],
-        summary="Update a student",
-        description="Update an existing student profile with the provided details"
+    "/{student_id}", 
+    response_model=APIResponse[StudentResponse],
+    summary="Update a student",
+    description="Update an existing student with the provided details"
 )
 async def update_student(
     student_id: int = Path(..., ge=1, description="The ID of the student to update"),
@@ -208,26 +193,41 @@ async def update_student(
         if db_student is None:
             raise ResourceNotFoundError("Student", student_id)
         
-        # Validate foreign keys
-        if student.parent_id is not None:
-            parent = db.query(Parent).filter(Parent.id == student.parent_id).first()
-            if not parent:
-                raise ForeignKeyViolationError(
-                    resource_type="Student",
-                    field="parent_id",
-                    value=student.parent_id,
-                    referenced_resource="Parent"
-                )
+        validation_errors = []
         
+        # Validate parent_id if provided
+        if student.parent_id is not None:
+            if student.parent_id <= 0:
+                validation_errors.append({
+                    "field": "parent_id",
+                    "message": f"Invalid parent_id: {student.parent_id}. Must be a positive integer or null."
+                })
+            else:
+                parent = db.query(Parent).filter(Parent.id == student.parent_id).first()
+                if not parent:
+                    validation_errors.append({
+                        "field": "parent_id",
+                        "message": f"Parent with ID {student.parent_id} does not exist."
+                    })
+        
+        # Validate current_class_id if provided
         if student.current_class_id is not None:
-            classroom = db.query(Classroom).filter(Classroom.id == student.current_class_id).first()
-            if not classroom:
-                raise ForeignKeyViolationError(
-                    resource_type="Student",
-                    field="current_class_id",
-                    value=student.current_class_id,
-                    referenced_resource="Classroom"
-                )
+            if student.current_class_id <= 0:
+                validation_errors.append({
+                    "field": "current_class_id",
+                    "message": f"Invalid current_class_id: {student.current_class_id}. Must be a positive integer or null."
+                })
+            else:
+                classroom = db.query(Classroom).filter(Classroom.id == student.current_class_id).first()
+                if not classroom:
+                    validation_errors.append({
+                        "field": "current_class_id",
+                        "message": f"Classroom with ID {student.current_class_id} does not exist."
+                    })
+        
+        # If there are validation errors, raise them
+        if validation_errors:
+            raise ValidationError(errors=validation_errors)
         
         # Update student
         update_data = student.dict(exclude_unset=True)
@@ -240,20 +240,25 @@ async def update_student(
         return APIResponse(
             success=True,
             data=db_student,
-            message=f"Student {student.first_name} {student.last_name} updated successfully"
+            message=f"Student {student_id} updated successfully"
         )
-    except ForeignKeyViolationError as e:
+    except ResourceNotFoundError as e:
+        raise e
+    except ValidationError as e:
         raise e
     except SQLAlchemyError as e:
         db.rollback()
-        raise DatabaseError(detail="Error updating student", original_error=e)
+        raise DatabaseError(detail=f"Error updating student {student_id}", original_error=e)
+    except Exception as e:
+        db.rollback()
+        raise DatabaseError(detail=f"Unexpected error updating student: {str(e)}")
 
 @router.delete(
-        "/{student_id}", 
-        response_model=APIResponse[Dict[str, Any]],
-        status_code=status.HTTP_200_OK,
-        summary="Delete a student",
-        description="Delete a student profile by ID"
+    "/{student_id}", 
+    response_model=APIResponse[Dict[str, Any]],
+    status_code=status.HTTP_200_OK,
+    summary="Delete a student",
+    description="Delete an existing student"
 )
 async def delete_student(
     student_id: int = Path(..., ge=1, description="The ID of the student to delete"),
@@ -280,3 +285,6 @@ async def delete_student(
     except SQLAlchemyError as e:
         db.rollback()
         raise DatabaseError(detail=f"Error deleting student {student_id}", original_error=e)
+    except Exception as e:
+        db.rollback()
+        raise DatabaseError(detail=f"Unexpected error deleting student: {str(e)}")
