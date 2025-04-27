@@ -35,11 +35,13 @@ class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     is_active: Optional[bool] = None
 
-class UserResponse(UserBase):
+class UserResponse(BaseModel):
     id: int
-    created_at: datetime
-    last_login: Optional[datetime] = None
+    username: str
+    full_name: str
+    role: str
     is_active: bool
+    created_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

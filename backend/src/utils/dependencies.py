@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 # OAuth2 scheme for token authentication - make sure tokenUrl is correct
 oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl="/token",  # Make sure this matches your actual token endpoint URL
+    tokenUrl="/api/auth/token",  # Make sure this matches your actual token endpoint URL
 )
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):

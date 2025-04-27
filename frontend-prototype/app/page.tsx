@@ -1,25 +1,50 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Users, BookOpen, CreditCard, ClipboardList, Calendar, Settings } from "lucide-react"
 import { AdminAlert } from "@/components/dashboard/admin-alert"
 import { StatCard } from "@/components/dashboard/stat-card"
 import { QuickActionCard } from "@/components/dashboard/quick-action-card"
 import { Header } from "@/components/dashboard/header"
 import { DashboardSection } from "@/components/dashboard/dashboard-section"
+import { useAuth } from './lib/auth'
+import { useRouter } from 'next/navigation'
+
+// Add this type definition
+interface HeaderUser {
+  name: string;
+  role: string;
+  avatar?: string;
+  initials: string;
+  avatarColor: string;
+}
 
 // Types pour les différents rôles d'utilisateurs
 type UserRole = "admin" | "teacher" | "parent" | "staff"
 
 export default function Home() {
-  // État pour simuler un utilisateur connecté
-  const [user, setUser] = useState({
-    name: "Ahmed Dubois",
-    role: "Administrateur",
-    avatar: "/placeholder.svg?height=40&width=40",
-    initials: "AD",
-    userRole: "admin" as UserRole,
-  })
+  const { user, logout } = useAuth();
+  const router = useRouter();
+
+  // Add a formatted user state for the header
+  const [headerUser, setHeaderUser] = useState<HeaderUser | null>(null);
+
+  // Update headerUser when auth user changes
+  useEffect(() => {
+    if (user) {
+      const names = user.full_name.split(' ');
+      const initials = names.map(n => n[0]).join('').toUpperCase();
+      
+      setHeaderUser({
+        name: user.full_name,
+        role: user.role,
+        initials: initials,
+        avatarColor: '#6c63ff', // You can make this dynamic based on role if needed
+      });
+    } else {
+      setHeaderUser(null);
+    }
+  }, [user]);
 
   // État pour simuler des notifications
   const [notifications, setNotifications] = useState([
@@ -35,10 +60,13 @@ export default function Home() {
   })
 
   // Fonction pour simuler la déconnexion
-  const handleLogout = () => {
-    // TODO: Implémenter la logique de déconnexion
-    console.log("Déconnexion...")
-    window.location.href = "/login"
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.push('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   }
 
   // Fonction pour marquer une notification comme lue
@@ -53,53 +81,12 @@ export default function Home() {
     setAdminAlert({ ...adminAlert, show: false })
   }
 
-  // Fonction pour changer de rôle (pour démonstration)
-  const changeRole = (role: UserRole) => {
-    const roleMap: Record<UserRole, { name: string; role: string; initials: string }> = {
-      admin: { name: "Ahmed Dubois", role: "Administrateur", initials: "AD" },
-      teacher: { name: "Marie Leroy", role: "Enseignante", initials: "ML" },
-      parent: { name: "Thomas Martin", role: "Parent", initials: "TM" },
-      staff: { name: "Sarah Toumi", role: "Secrétaire", initials: "ST" },
-    }
-
-    const newUserInfo = roleMap[role]
-    setUser({
-      ...user,
-      name: newUserInfo.name,
-      role: newUserInfo.role,
-      initials: newUserInfo.initials,
-      userRole: role,
-    })
-  }
-
-  // Configuration des éléments de menu selon le rôle
-  const getMenuItems = () => {
-    const baseItems = []
-
-    if (user.userRole === "admin") {
-      baseItems.push({
-        icon: <Settings className="h-4 w-4" />,
-        label: "Administration",
-        href: "/admin",
-      })
-    }
-
-    if (user.userRole === "parent") {
-      baseItems.push({
-        icon: <Users className="h-4 w-4" />,
-        label: "Espace parent",
-        href: "/parent-portal",
-      })
-    }
-
-    return baseItems
-  }
-
   // Configuration des statistiques selon le rôle
   const getStats = () => {
     const stats = []
+    const userRole = user?.role || '';
 
-    if (["admin", "staff"].includes(user.userRole)) {
+    if (["admin", "staff"].includes(userRole)) {
       stats.push({
         title: "Élèves inscrits",
         value: 45,
@@ -110,7 +97,7 @@ export default function Home() {
       })
     }
 
-    if (["admin", "teacher", "staff"].includes(user.userRole)) {
+    if (["admin", "teacher", "staff"].includes(userRole)) {
       stats.push({
         title: "Taux de présence",
         value: "92%",
@@ -125,7 +112,7 @@ export default function Home() {
       })
     }
 
-    if (["admin", "staff"].includes(user.userRole)) {
+    if (["admin", "staff"].includes(userRole)) {
       stats.push({
         title: "Paiements reçus",
         value: "3 250€",
@@ -136,7 +123,7 @@ export default function Home() {
       })
     }
 
-    if (["admin", "teacher"].includes(user.userRole)) {
+    if (["admin", "teacher"].includes(userRole)) {
       stats.push({
         title: "Bulletins générés",
         value: 42,
@@ -147,7 +134,7 @@ export default function Home() {
       })
     }
 
-    if (user.userRole === "parent") {
+    if (userRole === "parent") {
       stats.push({
         title: "Prochain paiement",
         value: "150€",
@@ -167,7 +154,7 @@ export default function Home() {
       })
     }
 
-    if (user.userRole === "teacher") {
+    if (userRole === "teacher") {
       stats.push({
         title: "Élèves dans ma classe",
         value: 18,
@@ -193,8 +180,9 @@ export default function Home() {
   // Configuration des actions rapides selon le rôle
   const getQuickActions = () => {
     const actions = []
+    const userRole = user?.role || '';
 
-    if (["admin", "staff"].includes(user.userRole)) {
+    if (["admin", "staff"].includes(userRole)) {
       actions.push({
         title: "Gestion des Élèves",
         description: "Inscriptions et suivi des dossiers",
@@ -205,7 +193,7 @@ export default function Home() {
       })
     }
 
-    if (["admin", "teacher", "staff"].includes(user.userRole)) {
+    if (["admin", "teacher", "staff"].includes(userRole)) {
       actions.push({
         title: "Emplois du Temps",
         description: "Organisation des cours",
@@ -216,7 +204,7 @@ export default function Home() {
       })
     }
 
-    if (["admin", "staff", "parent"].includes(user.userRole)) {
+    if (["admin", "staff", "parent"].includes(userRole)) {
       actions.push({
         title: "Paiements",
         description: "Gestion des frais et reçus",
@@ -227,7 +215,7 @@ export default function Home() {
       })
     }
 
-    if (["admin", "teacher", "staff"].includes(user.userRole)) {
+    if (["admin", "teacher", "staff"].includes(userRole)) {
       actions.push({
         title: "Présence",
         description: "Suivi des présences quotidiennes",
@@ -238,7 +226,7 @@ export default function Home() {
       })
     }
 
-    if (user.userRole === "parent") {
+    if (userRole === "parent") {
       actions.push({
         title: "Espace Parent",
         description: "Suivi de la scolarité",
@@ -249,7 +237,7 @@ export default function Home() {
       })
     }
 
-    if (user.userRole === "teacher") {
+    if (userRole === "teacher") {
       actions.push({
         title: "Mes Classes",
         description: "Gestion de mes élèves",
@@ -273,57 +261,37 @@ export default function Home() {
   }
 
   // Obtenir les données configurées selon le rôle
-  const menuItems = getMenuItems()
   const stats = getStats()
   const quickActions = getQuickActions()
+
+  // Protect the route
+  useEffect(() => {
+    if (!user) {
+      router.push('/login');
+    }
+  }, [user, router]);
+
+  // Don't render anything until we have user data
+  if (!headerUser) {
+    return null; // or a loading spinner
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       <Header
-        user={user}
+        user={headerUser}
         notifications={notifications}
-        menuItems={menuItems}
+        menuItems={[]}
         onLogout={handleLogout}
         onNotificationClick={handleNotificationClick}
       />
 
       <div className="container mx-auto py-10 px-4">
-        {/* Sélecteur de rôle pour démonstration */}
-        <div className="mb-8 p-4 bg-gray-100 rounded-lg">
-          <h3 className="text-sm font-medium text-gray-700 mb-2">Changer de rôle (pour démonstration)</h3>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => changeRole("admin")}
-              className={`px-3 py-1 rounded-full text-xs font-medium ${user.userRole === "admin" ? "bg-[#6c63ff] text-white" : "bg-gray-200 text-gray-700"}`}
-            >
-              Administrateur
-            </button>
-            <button
-              onClick={() => changeRole("teacher")}
-              className={`px-3 py-1 rounded-full text-xs font-medium ${user.userRole === "teacher" ? "bg-[#6c63ff] text-white" : "bg-gray-200 text-gray-700"}`}
-            >
-              Enseignant
-            </button>
-            <button
-              onClick={() => changeRole("parent")}
-              className={`px-3 py-1 rounded-full text-xs font-medium ${user.userRole === "parent" ? "bg-[#6c63ff] text-white" : "bg-gray-200 text-gray-700"}`}
-            >
-              Parent
-            </button>
-            <button
-              onClick={() => changeRole("staff")}
-              className={`px-3 py-1 rounded-full text-xs font-medium ${user.userRole === "staff" ? "bg-[#6c63ff] text-white" : "bg-gray-200 text-gray-700"}`}
-            >
-              Personnel administratif
-            </button>
-          </div>
-        </div>
-
         {/* Message d'alerte de l'administrateur */}
         {adminAlert.show && <AdminAlert message={adminAlert.message} onDismiss={dismissAlert} />}
 
         <DashboardSection>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Bonjour, {user.name}</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Bonjour, {user?.full_name}</h2>
           <p className="text-gray-600">
             Bienvenue sur votre tableau de bord. Voici un aperçu de vos activités récentes.
           </p>

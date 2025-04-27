@@ -10,24 +10,57 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { BookOpenCheck, Lock, Mail, Eye, EyeOff, AlertCircle } from "lucide-react"
+import { login as loginApi } from '../lib/api'
+import { useAuth } from '../lib/auth'
 
 export default function LoginPage() {
   const router = useRouter()
+  const { login } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const [formData, setFormData] = useState({
+    username: '',
+    password: ''
+  });
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
+    e.preventDefault();
+    setLoading(true);
+    setError("");
 
-    // Simuler une authentification
-    setTimeout(() => {
-      setLoading(false)
-      router.push("/")
-    }, 1500)
-  }
+    try {
+      console.log('Login attempt with:', { username: formData.username });
+      const response = await loginApi(formData);
+      
+      if (response.success && response.data) {
+        await login(response.data.access_token, response.data.user);
+        router.push("/");
+      } else {
+        throw new Error('Invalid response format');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      if (err instanceof Error) {
+        if (err.message === 'Failed to fetch') {
+          setError("Impossible de se connecter au serveur. Veuillez vérifier votre connexion.");
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError("Une erreur est survenue lors de la connexion");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.id]: e.target.value
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#f0eeff] to-white flex flex-col items-center justify-center p-4">
@@ -55,17 +88,19 @@ export default function LoginPage() {
 
             <form onSubmit={handleLogin} className="space-y-5">
               <div className="space-y-3">
-                <Label htmlFor="email" className="text-[#2d2a54] text-base">
+                <Label htmlFor="username" className="text-[#2d2a54] text-base">
                   Identifiant
                 </Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                   <Input
-                    id="email"
+                    id="username"
                     type="text"
                     placeholder="Votre email ou nom d'utilisateur"
                     className="pl-10 border-[#e0ddff] focus:border-[#6c63ff] focus:ring-[#6c63ff] h-12 text-base"
                     required
+                    value={formData.username}
+                    onChange={handleInputChange}
                   />
                 </div>
               </div>
@@ -87,6 +122,8 @@ export default function LoginPage() {
                     placeholder="Votre mot de passe"
                     className="pl-10 pr-10 border-[#e0ddff] focus:border-[#6c63ff] focus:ring-[#6c63ff] h-12 text-base"
                     required
+                    value={formData.password}
+                    onChange={handleInputChange}
                   />
                   <button
                     type="button"

@@ -23,8 +23,8 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     role = Column(Enum(UserRole), nullable=False)
     full_name = Column(String(255), nullable=False)
-    created_at = Column(DateTime, server_default=func.now())
-    last_login = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    last_login = Column(DateTime, nullable=True)
     is_active = Column(Boolean, default=True)
 
     # Relationships

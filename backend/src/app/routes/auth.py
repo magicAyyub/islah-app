@@ -1,6 +1,6 @@
 # src/routes/auth.py
 
-from fastapi import APIRouter, Depends, status, Body, Request
+from fastapi import APIRouter, Depends, status, Body, Request, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
@@ -10,7 +10,7 @@ import logging
 from pydantic import BaseModel
 
 from src.utils.database import get_db
-from src.utils.dependencies import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+from src.utils.dependencies import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, get_current_user
 from src.models import User
 from src.schemas import Token, UserCreate, UserResponse
 from src.utils.error_handlers import APIError, ResourceAlreadyExistsError, DatabaseError
@@ -31,6 +31,7 @@ class LoginResponse(BaseModel):
     user: UserResponse
 
 router = APIRouter(
+    prefix="/auth",
     tags=["Authentication"],
     responses={
         401: {"description": "Unauthorized"},
@@ -130,32 +131,30 @@ async def login(
         user.last_login = datetime.utcnow()
         db.commit()
         
-        # Log successful login
-        logger.info(f"User {user.username} (ID: {user.id}) logged in successfully via frontend")
+        # Create user response data
+        user_data = {
+            "id": user.id,
+            "username": user.username,
+            "full_name": user.full_name,
+            "role": user.role,
+            "is_active": user.is_active,
+            "created_at": user.created_at if hasattr(user, 'created_at') else None
+        }
         
-        # Return token and user information
         return APIResponse(
             success=True,
-            data=LoginResponse(
-                access_token=access_token,
-                token_type="bearer",
-                user=user
-            ),
+            data={
+                "access_token": access_token,
+                "token_type": "bearer",
+                "user": user_data
+            },
             message="Login successful"
         )
-    except APIError as e:
-        # Re-raise API errors
-        raise e
-    except SQLAlchemyError as e:
-        # Handle database errors
-        raise DatabaseError(detail="Database error during authentication", original_error=e)
     except Exception as e:
-        # Handle unexpected errors
-        logger.error(f"Unexpected error during frontend login: {str(e)}")
-        raise APIError(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred during login",
-            error_code="LOGIN_ERROR"
+        logger.error(f"Login error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Nom d'utilisateur ou mot de passe incorrect",
         )
 
 @router.post(
@@ -213,4 +212,33 @@ async def register_user(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred during user registration",
             error_code="REGISTRATION_ERROR"
+        )
+
+@router.post(
+    "/logout",
+    response_model=APIResponse,
+    summary="Logout user",
+    description="Invalidate the current user's token"
+)
+async def logout(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    try:
+        # Update last logout time
+        current_user.last_login = None
+        db.commit()
+        
+        return APIResponse(
+            success=True,
+            message="Successfully logged out"
+        )
+    except SQLAlchemyError as e:
+        raise DatabaseError(detail="Database error during logout", original_error=e)
+    except Exception as e:
+        logger.error(f"Unexpected error during logout: {str(e)}")
+        raise APIError(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred during logout",
+            error_code="LOGOUT_ERROR"
         )

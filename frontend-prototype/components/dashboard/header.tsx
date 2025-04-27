@@ -3,30 +3,36 @@ import { BookOpenCheck } from "lucide-react"
 import { NotificationsMenu } from "./notifications-menu"
 import { UserNav } from "./user-nav"
 
+interface HeaderUser {
+  name: string;
+  role: string;
+  avatar?: string;
+  initials: string;
+  avatarColor?: string;
+}
+
+interface Notification {
+  id: string | number;
+  title: string;
+  time: string;
+  read: boolean;
+}
+
+interface MenuItem {
+  icon: React.ReactNode;
+  label: string;
+  href?: string;
+  onClick?: () => void;
+  color?: string;
+}
+
 interface HeaderProps {
-  user: {
-    name: string
-    role: string
-    avatar?: string
-    initials: string
-    avatarColor?: string
-  }
-  notifications: {
-    id: string | number
-    title: string
-    time: string
-    read: boolean
-  }[]
-  menuItems?: {
-    icon: React.ReactNode
-    label: string
-    href?: string
-    onClick?: () => void
-    color?: string
-  }[]
-  onLogout: () => void
-  onNotificationClick?: (id: string | number) => void
-  onViewAllNotifications?: () => void
+  user: HeaderUser | null;
+  notifications: Notification[];
+  menuItems: MenuItem[];
+  onLogout: () => void;
+  onNotificationClick: (id: number | string) => void;
+  onViewAllNotifications?: () => void;
 }
 
 export function Header({

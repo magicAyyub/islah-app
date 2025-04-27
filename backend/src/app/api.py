@@ -102,16 +102,16 @@ def custom_openapi():
             "type": "oauth2",
             "flows": {
                 "password": {
-                    "tokenUrl": "/token",
+                    "tokenUrl": "/api/auth/token",
                     "scopes": {}
                 }
             }
         }
     }
     
-    # Apply security to all operations except /token
+    # Apply security to all operations except /auth/token
     for path_url, path_item in openapi_schema["paths"].items():
-        if path_url != "/token":  # Skip the token endpoint
+        if path_url != "/api/auth/token":  # Skip the token endpoint
             for operation in path_item.values():
                 operation["security"] = [{"OAuth2PasswordBearer": []}]
     
@@ -120,13 +120,18 @@ def custom_openapi():
 
 app.openapi = custom_openapi
 
-# Add CORS middleware
+# Configure CORS - Update this section
+origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ORIGINS,
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"]
+    allow_headers=["*"],
 )
 
 # Exception handlers
@@ -182,7 +187,7 @@ async def request_validation_exception_handler(request: Request, exc: RequestVal
     )
 
 # Include routers
-app.include_router(auth.router)
+app.include_router(auth.router, prefix="/api")
 app.include_router(users.router)
 app.include_router(students.router)
 app.include_router(parents.router)
@@ -207,3 +212,7 @@ async def root():
             "version": "1.0.0"
         }
     )
+
+@app.get("/api/health")
+async def health_check():
+    return {"status": "ok", "message": "Server is running"}
