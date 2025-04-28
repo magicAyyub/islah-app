@@ -9,7 +9,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.10"
+python = ">=3.10,<4.0"
 fastapi = ">=0.115.8,<0.116.0"
 uvicorn = ">=0.34.0,<0.35.0"
 pydantic = { version = ">=2.10.6,<3.0.0", extras = ["email"] }
@@ -27,15 +27,38 @@ pyjwt = "^2.10.1"
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
 python-jose = {extras = ["cryptography"], version = "^3.4.0"}
 pydantic-settings = "^2.8.1"
+rich = "^13.7.0"
+inquirerpy = { version = "^0.3.4", python = ">=3.10,<4.0" }
 
 
 [tool.poetry.scripts]
-setup = "src.setup_docker:setup"
-stop = "src.setup_docker:stop_docker"
-reset = "src.setup_docker:reset_docker"
-docker = "src.setup_docker:build_and_run_docker"
-startapp = "src.main:main"
-logs = "src.setup_docker:show_docker_logs"
+# Main commands
+setup = "src.manage:run_setup"
+help = "src.manage:show_help"
+
+# Docker management
+docker = "src.manage:build_and_run_docker"
+stop = "src.manage:stop_docker"
+reset = "src.manage:reset_docker"
+logs = "src.manage:show_docker_logs"
+
+# Database management
+db = "src.manage:db_cli"  # New unified database CLI command
+
+# Database management commands
+db-migrate = "src.manage:db_migrate"
+db-upgrade = "src.manage:db_upgrade"
+db-downgrade = "src.manage:db_downgrade"
+db-history = "src.manage:db_history"
+db-current = "src.manage:db_current"
+db-status = "src.manage:db_status"
+psql = "src.manage:psql"
+
+# User management
+create-admin = "src.manage:create_admin"
+
+# New command for showing database information
+db-info = "src.manage:show_db_info"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

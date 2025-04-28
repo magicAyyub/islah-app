@@ -59,7 +59,7 @@ export function Header({
             onNotificationClick={onNotificationClick}
             onViewAll={onViewAllNotifications}
           />
-          <UserNav user={user} menuItems={menuItems} onLogout={onLogout} />
+          {user && <UserNav user={user} menuItems={menuItems} onLogout={onLogout} />}
         </div>
       </div>
     </header>

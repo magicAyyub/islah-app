@@ -1,20 +1,39 @@
-# Utilise l'image Python 3.12
-FROM python:3.12
+# Use Python 3.10 base image
+FROM python:3.10-slim
 
-# Définit le répertoire de travail dans le conteneur
+# Set working directory
 WORKDIR /app
 
-# Copie le fichier pyproject.toml et poetry.lock
-COPY pyproject.toml poetry.lock /app/
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Installe Poetry
+# Install Poetry
 RUN pip install poetry
 
-# Installe les dépendances du projet
-RUN poetry install --no-root
+# Copy only the files needed for poetry install first
+COPY pyproject.toml poetry.lock README.md ./
 
-# Copie tout le reste du projet dans le conteneur
-COPY . /app/
+# Configure poetry to not create a virtual environment inside the container
+RUN poetry config virtualenvs.create false
 
-# Exécute le serveur via main.py
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Install dependencies without the root package
+RUN poetry install --no-interaction --no-ansi --no-root
+
+# Now copy the rest of the application
+COPY . .
+
+# Install the root package
+RUN poetry install --no-interaction --no-ansi
+
+# Make sure scripts are executable
+RUN chmod +x /app/src/manage.py
+
+# Set environment variables
+ENV PYTHONPATH=/app
+ENV PATH="/app:${PATH}"
+
+# Command to run the application
+CMD ["poetry", "run", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

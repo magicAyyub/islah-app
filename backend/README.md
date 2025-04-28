@@ -10,150 +10,47 @@ Bienvenue dans la partie backend, elle utilise **FastAPI**, **Docker**, et **Poe
 Avant de commencer, assurez-vous d'avoir les outils suivants installés sur votre machine :
 
 - **Python 3.10+** : [Télécharger ici](https://www.python.org/downloads/)
-- **Poetry** : [Documentation officielle](https://python-poetry.org/docs/#installation)
 - **Docker** et **Docker Compose** : [Télécharger Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
+NB: Vous pouvez aussi télécharger [Poetry](https://python-poetry.org/docs/#installation) pour plus de facilité avec les commandes.
 ---
 
 ## Installation et Configuration
 
-Le projet est conçu pour être configuré facilement grâce au script `setup`. Voici les étapes à suivre :
+Le projet est conçu pour être configuré facilement et de manière très intuitive et très claire.
 
 1. **Clonez le dépôt :**
 
 ```bash
-git clone https://github.com/Murielle1/get-your-trip.git
+git clone https://github.com/magicAyyub/islah-app.git
 cd backend
 ```
 
-2. **Exécutez le script de configuration :**
+2. **Installez les dépendances**
+```bash
+poetry install # si installé globalement
+# ou
+pip install poetry
+python -m poetry install
+```
+2. **Setup**
 
-   Le script `setup` se charge des étapes suivantes :
-   - Création du fichier `.env` avec des valeurs par défaut.
-   - Installation des dépendances via Poetry.
-   - Construction des conteneurs Docker.
-
-   Lancez simplement la commande suivante :
+Lancez simplement la commande suivante :
 
 ```bash
-poetry install
-poetry run setup
+poetry run setup # si installé globalement
+# ou
+python -m poetry run setup
 ```
 
-> NB: Vérifiez de docker-desktop est bien en cours d'exécution sur votre machine avant d'exécuter le script `setup`.
+> NB: Vérifiez que docker-desktop est bien en cours d'exécution sur votre machine avant d'exécuter le `run setup`.
 
-3. **Vérifiez que tout est prêt :**
-
-   Une fois le script exécuté, vous devriez voir les conteneurs Docker démarrés et l'application prête à être utilisée.
-
----
-
-## Exécution de l'Application
-
-### Avec Docker
-
-Si vous avez exécuté le script `setup`, les conteneurs Docker sont déjà construits et lancés. Vous n'avez rien d'autre à faire. L'application sera accessible à l'adresse suivante :
-
-```
-http://localhost:8000
-```
-
-Si vous souhaitez relancer les conteneurs manuellement, utilisez :
-
+2. **Commandes disponibles**
+Une aide est disponible avec une description sur les commandes afin de ne pas être perdu
 ```bash
-poetry run stop
-poetry run docker
-```
-
-Si vous souhaitez réinitialiser les conteneurs, utilisez :
-
-```bash
-poetry run reset
-```
-
-
-### Localement (sans Docker)
-
-1. Activez l'environnement virtuel Poetry :
-
-```bash
-poetry shell
-```
-
-2. Lancez l'application :
-
-```bash
-poetry run startapp
-```
-
-L'application et la base de données MongoDB seront accessibles aux mêmes adresses que ci-dessus.
-
----
-
-## Structure du Projet
-
-Voici un aperçu de la structure du projet :
-
-```
-backend/
-├── pyproject.toml      # Configuration de Poetry
-├── src/                # Code source principal
-│   ├── main.py         # Point d'entrée de l'application FastAPI
-│   ├── app/            # Modules FastAPI (routes, modèles, etc.)
-│   ├── utils/          # Utilitaires (connexion Postgres, gestion .env)
-│   └── setup_docker.py # Script de configuration automatique
-│   └── .env            # Fichier contenant les variables d'environnement (généré automatiquement)
-├── Dockerfile          # Instructions pour construire l'image Docker
-├── docker-compose.yml  # Configuration des services Docker
-```
-
----
-
-## Variables d'Environnement
-
-Le fichier `.env` est généré automatiquement par le script `setup`. Voici un exemple des variables qu'il contient :
-
-```
-DB_USER=admin
-DB_PASSWORD=mypassword
-DB_HOST=db
-DB_PORT=5432
-DB_NAME=data
-```
-
-Vous pouvez modifier ces valeurs si nécessaire.
-
----
-
-## Devs
-
-Dans docker desktop, vous pouvez accéder à la base de données. 
-- Cliquer sur le nom du container en cours d'exécution (backend) 
-- Cliquer sur backend_db_1
-- Cliquer sur l'onglet "Exec"
-- Entrer la commande :
-
-```bash
- psql -h localhost -p 5432 -U <DB_USER> -d <DB_NAME> -W # par exemple psql -h localhost -p 5432 -U root -d data -W 
-```
-- Entrer le mot de passe (DB_PASSWORD) pour accéder à la base de données
-- Vous pouvez :
-   - Voir les tables de la base de données
-   - Exécuter des requêtes SQL
-   - etc.
-```bash
-\dt # pour voir les tables
-
-SELECT * FROM <table_name>; # pour voir les données d'une table
-
-\? # list all the commands
-\l # list databases
-\conninfo # display information about current connection
-\c [DBNAME] # connect to new database, e.g., \c template1
-\dt # list tables of the public schema
-\dt <schema-name>.* # list tables of certain schema, e.g., \dt public.*
-\dt *.* # list tables of all schemas
-\q # quit psql
+poetry run help # si installé globalement
+# ou
+python -m poetry run help
 ```
 
 
@@ -186,6 +83,8 @@ En cas de problème, les logs des conteneurs Docker peuvent vous aider à identi
 
 ```bash
 poetry run logs
+# ou
+python -m poetry run logs
 ```
 
 Si le problème persiste, veuillez contacter [magicAyyub](https://github.com/magicAyyub)ou ouvrir une issue sur le dépôt GitHub.

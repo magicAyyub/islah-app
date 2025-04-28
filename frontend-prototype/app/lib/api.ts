@@ -5,8 +5,8 @@ interface RegisterData {
   password: string;
   full_name: string;
   role: 'admin' | 'staff' | 'teacher' | 'parent';
-  email: string;
-  phone_number: string;
+  email?: string;
+  phone_number?: string;
 }
 
 interface LoginData {

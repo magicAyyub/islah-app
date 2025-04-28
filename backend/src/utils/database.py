@@ -1,61 +1,29 @@
 import os
 from typing import Generator
 from dotenv import load_dotenv
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 from sqlalchemy.pool import NullPool
+from sqlalchemy.ext.declarative import declarative_base
 
 # Load environment variables
 load_dotenv()
 
-# Database configuration with fallback and validation
 def get_database_url() -> str:
-    """
-    Construct database URL with comprehensive error checking.
+    """Get database URL from environment variables with fallback values"""
+    db_user = os.getenv("DB_USER", "postgres")
+    db_password = os.getenv("DB_PASSWORD", "postgres")
+    db_host = os.getenv("DB_HOST", "localhost")
+    db_port = os.getenv("DB_PORT", "5432")
+    db_name = os.getenv("DB_NAME", "islah_db")
     
-    Raises:
-        ValueError: If critical database configuration is missing
-    """
-    # Required environment variables
-    required_vars = [
-        "DB_USER", 
-        "DB_PASSWORD", 
-        "DB_NAME", 
-        "DB_HOST", 
-        "DB_PORT"
-    ]
-    
-    # Check for missing critical environment variables
-    missing_vars = [var for var in required_vars if not os.getenv(var)]
-    if missing_vars:
-        raise ValueError(f"Missing critical database environment variables: {', '.join(missing_vars)}")
-    
-    # Construct and return database URL
-    return (
-        f"postgresql://"
-        f"{os.getenv('DB_USER')}:"
-        f"{os.getenv('DB_PASSWORD')}@"
-        f"{os.getenv('DB_HOST', 'localhost')}:"
-        f"{os.getenv('DB_PORT', '5432')}/"
-        f"{os.getenv('DB_NAME')}"
-    )
+    return f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
 
-# Create SQLAlchemy engine with connection pooling and error handling
-DATABASE_URL = get_database_url()
-engine = create_engine(
-    DATABASE_URL,
-    poolclass=NullPool,  # Disable connection pooling for better connection management
-    pool_pre_ping=True,  # Test connections before using them
-    echo=False  # Set to True for SQL query logging during development
-)
+SQLALCHEMY_DATABASE_URL = get_database_url()
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
 
 # Create session factory
-SessionLocal = sessionmaker(
-    autocommit=False, 
-    autoflush=False, 
-    bind=engine,
-    expire_on_commit=False  # Keep objects usable after session closes
-)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Declarative base for ORM models
 Base = declarative_base()
@@ -78,3 +46,18 @@ def get_db() -> Generator[Session, None, None]:
         raise
     finally:
         db.close()
+
+def create_tables_if_not_exist(models: list) -> None:
+    """
+    Create database tables only if they do not already exist.
+    
+    This method checks each table in the models before creating it,
+    preventing errors from attempting to recreate existing tables.
+    """
+    inspector = inspect(engine)
+    
+    for model_class in models:
+        # Check if table already exists
+        if not inspector.has_table(model_class.__tablename__):
+            # Create only if table doesn't exist
+            model_class.__table__.create(engine)

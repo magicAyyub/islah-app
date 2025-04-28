@@ -2,13 +2,17 @@
 Configuration settings for the application.
 """
 
-from typing import List
+from typing import List, Any
+from fastapi.openapi.utils import get_openapi
 
 
 ORIGINS: List[str] = [
     "http://localhost:3000",
     "http://localhost:3000/api",
-    "localhost:3000/api",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3000/api",
+    "http://0.0.0.0:3000",
+    "http://0.0.0.0:3000/api",  
 ]
 
 # JWT settings
@@ -19,3 +23,46 @@ REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
 # Application settings
 DEBUG: bool = True
+
+# Custom OpenAPI schema to properly configure OAuth2 password flow
+def custom_openapi(app: Any) -> dict:
+    """
+    Custom OpenAPI schema to configure OAuth2 password flow.
+    """
+    if app.openapi_schema:
+        return app.openapi_schema
+    
+    openapi_schema = get_openapi(
+        title="Islah School API",
+        version="1.0.0",
+        description="API pour la gestion de l'école de la mosquée Islah",
+        routes=app.routes,
+    )
+    
+    # Initialize components if it doesn't exist
+    if "components" not in openapi_schema:
+        openapi_schema["components"] = {}
+    
+    # Configure OAuth2 password flow
+    openapi_schema["components"]["securitySchemes"] = {
+        "OAuth2PasswordBearer": {
+            "type": "oauth2",
+            "flows": {
+                "password": {
+                    "tokenUrl": "/api/auth/token",
+                    "scopes": {}
+                }
+            }
+        }
+    }
+    
+    # Apply security to all operations except /auth/token
+    for path_url, path_item in openapi_schema["paths"].items():
+        if path_url != "/api/auth/token":  # Skip the token endpoint
+            for operation in path_item.values():
+                if "security" not in operation:
+                    operation["security"] = []
+                operation["security"].append({"OAuth2PasswordBearer": []})
+    
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema

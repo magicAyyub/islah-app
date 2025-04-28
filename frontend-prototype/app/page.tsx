@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Users, BookOpen, CreditCard, ClipboardList, Calendar, Settings } from "lucide-react"
+import { Users, BookOpen, CreditCard, ClipboardList, Calendar } from "lucide-react"
 import { AdminAlert } from "@/components/dashboard/admin-alert"
 import { StatCard } from "@/components/dashboard/stat-card"
 import { QuickActionCard } from "@/components/dashboard/quick-action-card"
@@ -20,7 +20,7 @@ interface HeaderUser {
 }
 
 // Types pour les différents rôles d'utilisateurs
-type UserRole = "admin" | "teacher" | "parent" | "staff"
+//type UserRole = "admin" | "teacher" | "parent" | "staff"
 
 export default function Home() {
   const { user, logout } = useAuth();

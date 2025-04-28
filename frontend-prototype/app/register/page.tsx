@@ -6,7 +6,6 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select } from "@/components/ui/select"
 import { BookOpenCheck, User, AlertCircle, CheckCircle, Eye, EyeOff, Lock, ArrowLeft } from "lucide-react"
 import { register } from '../lib/api'
 import { useAuth } from '../lib/auth'
@@ -121,7 +120,7 @@ export default function RegisterPage() {
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="space-y-3">
                     <Label htmlFor="username" className="text-[#2d2a54] text-base">
-                      Nom d'utilisateur
+                      Nom d&apos;utilisateur
                     </Label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
