@@ -41,24 +41,8 @@ docker = "src.manage:build_and_run_docker"
 stop = "src.manage:stop_docker"
 reset = "src.manage:reset_docker"
 logs = "src.manage:show_docker_logs"
-
-# Database management
-db = "src.manage:db_cli"  # New unified database CLI command
-
-# Database management commands
-db-migrate = "src.manage:db_migrate"
-db-upgrade = "src.manage:db_upgrade"
-db-downgrade = "src.manage:db_downgrade"
-db-history = "src.manage:db_history"
-db-current = "src.manage:db_current"
-db-status = "src.manage:db_status"
-psql = "src.manage:psql"
-
-# User management
-create-admin = "src.manage:create_admin"
-
-# New command for showing database information
-db-info = "src.manage:show_db_info"
+db = "src.commands.db:db_cli"  
+admin = "src.commands.admin:admin_cli"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

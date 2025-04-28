@@ -1,3 +1,9 @@
+"""
+Database connection and session management for SQLAlchemy.
+This module provides functions to create a database engine, session management,
+and table creation if they do not exist.
+It uses environment variables to configure the database connection. 
+"""
 import os
 from typing import Generator
 from dotenv import load_dotenv

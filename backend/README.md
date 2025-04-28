@@ -45,7 +45,7 @@ python -m poetry run setup
 
 > NB: Vérifiez que docker-desktop est bien en cours d'exécution sur votre machine avant d'exécuter le `run setup`.
 
-2. **Commandes disponibles**
+3. **Commandes disponibles**
 Une aide est disponible avec une description sur les commandes afin de ne pas être perdu
 ```bash
 poetry run help # si installé globalement
@@ -53,6 +53,8 @@ poetry run help # si installé globalement
 python -m poetry run help
 ```
 
+> Le backend est maintenant accessible à l'adresse `http://localhost:8000/docs`. Un administrateur par défaut dont les informations vous sont donné à la fin du setup est créé. 
+---
 
 ## Contribution
 

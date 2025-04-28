@@ -1,4 +1,8 @@
-# src/utils/response_models.py
+"""
+Standardized response models for API responses.
+These models are used to ensure consistency in the structure of API responses,
+including success and error responses, as well as paginated responses.
+"""
 
 from typing import Generic, TypeVar, Optional, List, Dict, Any, Union
 from pydantic import BaseModel, Field, ConfigDict

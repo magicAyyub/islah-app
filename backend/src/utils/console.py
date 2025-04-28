@@ -1,3 +1,9 @@
+"""
+Console utility functions for displaying messages and progress in a styled manner 
+using Rich library.
+"""
+
+import sys
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
@@ -11,6 +17,7 @@ from InquirerPy.base.control import Choice
 from InquirerPy.separator import Separator
 import subprocess
 import time
+from src.utils.settings import DEFAULT_CONFIG
 
 # Create themed console with custom styles
 theme = Theme({
@@ -179,19 +186,97 @@ def create_summary_table(title: str, data: dict):
     
     return table
 
-def wait_for_container_ready(service: str = "api", max_retries: int = 30) -> bool:
+# def wait_for_container_ready(service: str = "api", max_retries: int = 30) -> bool:
+#     """Wait for container to be ready"""
+#     for i in range(max_retries):
+#         try:
+#             result = subprocess.run(
+#                 ["docker-compose", "ps", service],
+#                 capture_output=True,
+#                 text=True,
+#                 check=True
+#             )
+#             if "Up" in result.stdout:
+#                 return True
+#         except subprocess.CalledProcessError:
+#             pass
+#         time.sleep(1)
+#     return False 
+
+def wait_for_container_ready(service: str, max_retries: int = 30) -> bool:
     """Wait for container to be ready"""
     for i in range(max_retries):
         try:
-            result = subprocess.run(
-                ["docker-compose", "ps", service],
-                capture_output=True,
-                text=True,
-                check=True
-            )
+            result = run_command(f"docker-compose ps {service}", capture=True)
             if "Up" in result.stdout:
+                console.print(f"  [green]✓[/] {service} is ready")
                 return True
         except subprocess.CalledProcessError:
             pass
         time.sleep(1)
-    return False 
+    return False
+
+def run_in_container(command: str, service: str = "api", capture_output: bool = False) -> None:
+    """Run a command in a Docker container"""
+    try:
+        if not wait_for_container_ready(service):
+            console.print(f"[red]×[/] {service} is not ready")
+            sys.exit(1)
+
+        
+        # First, check if the container is actually running
+        status_check = subprocess.run(
+            ["docker-compose", "ps", "-q", service],
+            capture_output=True,
+            text=True
+        )
+        
+        if not status_check.stdout:
+            console.print(f"[red]×[/] Container {service} is not running")
+            sys.exit(1)
+
+        # Use docker-compose exec with -T flag and set a timeout
+        try:
+            result = subprocess.run(
+                ["docker-compose", "exec", "-T", service, "sh", "-c", command],
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=30  # Set a 30-second timeout
+            )
+            
+            if result.stdout.strip() and not capture_output:
+                print(result.stdout.strip())
+            
+            if result.stderr:
+                console.print(f"[yellow]Warning:[/] {result.stderr}")
+                
+        except subprocess.TimeoutExpired:
+            console.print(f"[red]×[/] Command timed out after 30 seconds: {command}")
+            console.print("[info]Showing container logs for debugging:")
+            subprocess.run(["docker-compose", "logs", service], check=False)
+            raise Exception("Command timed out")
+            
+    except subprocess.CalledProcessError as e:
+        console.print(f"[red]×[/] Command failed: {e}")
+        if e.stdout:
+            print("Output:", e.stdout)
+        if e.stderr:
+            console.print("[info]Showing container logs for debugging:")
+            subprocess.run(["docker-compose", "logs", service], check=False)
+        sys.exit(1)
+
+def run_command(command: str, capture: bool = False) -> subprocess.CompletedProcess:
+    """Run a shell command with optional output capture"""
+    try:
+        return subprocess.run(
+            command.split(),
+            check=True,
+            capture_output=capture,
+            text=True
+        )
+    except subprocess.CalledProcessError as e:
+        if capture:
+            raise e
+        console.print(f"[red]× Command failed:[/] {e}")
+        sys.exit(1)

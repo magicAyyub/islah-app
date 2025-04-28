@@ -1,3 +1,8 @@
+"""
+Password hashing and verification utilities.
+This module provides functions to hash passwords and verify them using the bcrypt algorithm.
+""" 
+
 from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

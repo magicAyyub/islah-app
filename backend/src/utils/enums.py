@@ -1,4 +1,9 @@
-# -*- coding: utf-8 -*-
+"""
+Enums for various statuses and types used in the application.
+These enums are used to standardize the values used in the application,
+making it easier to manage and understand the different states and types
+of data.
+"""
 import enum
 from datetime import date
 

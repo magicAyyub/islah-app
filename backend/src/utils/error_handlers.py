@@ -1,4 +1,14 @@
-# src/utils/error_handlers.py
+"""
+Error handling utilities for FastAPI applications.
+This module provides custom error classes for common API errors,
+including resource not found, validation errors, and database errors.
+It also includes a base error class for logging and additional context.
+This module is designed to be used with FastAPI and SQLAlchemy,
+and it provides a consistent way to handle errors across the application.
+The custom error classes inherit from FastAPI's HTTPException,
+allowing them to be raised in route handlers and automatically
+converted to HTTP responses.
+"""
 
 from fastapi import HTTPException, status
 from typing import Optional, Dict, Any, List, Union

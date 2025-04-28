@@ -21,7 +21,7 @@ Le système actuel est très peu fiable et peu pratique. L'objectif est de crée
 
 ## Notes
 
-Un essaie de backend a été fait avec FastAPI, un framework python pour la création d'API REST. Il est très simple d'utilisation avec une documentation automatique afin de tester les différents endpoints. Il n'est pas encore terminé mais fonctionne. Il pourrait évoluer en fonction des besoins.
+Un essaie de backend a été fait avec FastAPI, un framework python pour la création d'API REST. Il est très simple d'utilisation avec une documentation automatique afin de tester les différents endpoints. Il n'est pas encore terminé mais fonctionne. Il pourrait évoluer en fonction des besoins. [voir ici](backend/README.md).
 ## MCD (peu évoluer)
 
 ![MCD](mcd.png)

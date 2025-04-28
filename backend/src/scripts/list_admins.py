@@ -1,7 +1,8 @@
+# -*- coding: utf-8 -*-
 from src.utils.database import SessionLocal
 from src.models import User
 from src.utils.enums import UserRole
-from src.utils.console import print_banner, print_admin_table, print_error
+from src.utils.console import print_banner, print_admin_table, print_error, print_info
 
 def list_admin_users():
     """List all admin users"""

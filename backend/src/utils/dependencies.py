@@ -1,4 +1,9 @@
-# src/utils/dependencies.py
+""" 
+Dependencies for authentication and authorization in FastAPI.
+This module includes functions to create access tokens, retrieve the current user,
+and check user roles.
+It uses JWT for token management and SQLAlchemy for database interactions.
+"""
 
 from fastapi import Depends, status, Security
 from fastapi.security import OAuth2PasswordBearer

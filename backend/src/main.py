@@ -1,4 +1,6 @@
-# -*- coding: utf-8 -*-
+""" 
+Main entry point for the FastAPI application.
+"""
 import uvicorn
 from src.app import create_app
 

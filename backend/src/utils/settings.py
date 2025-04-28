@@ -24,6 +24,15 @@ REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 # Application settings
 DEBUG: bool = True
 
+# Default Database configuration
+DEFAULT_CONFIG = {
+    "DB_USER": "postgres",
+    "DB_PASSWORD": "postgres",
+    "DB_NAME": "islah_db",
+    "DB_HOST": "db",
+    "DB_PORT": "5432"
+}
+
 # Custom OpenAPI schema to properly configure OAuth2 password flow
 def custom_openapi(app: Any) -> dict:
     """

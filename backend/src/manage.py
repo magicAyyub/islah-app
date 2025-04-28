@@ -1,32 +1,27 @@
-import os
+""" 
+Islah School API Management Script
+This script provides a command-line interface for managing the Islah School API project.
+It includes commands for setting up the environment, managing Docker containers,
+and performing database operations.
+"""
+
+
 import sys
 from pathlib import Path
 import subprocess
 from typing import Dict
-from dotenv import load_dotenv
-import argparse
 import asyncio
-import time
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from src.utils.console import (
-    print_banner, print_success, print_error,
-    print_warning, print_info, create_spinner,
-    prompt_setup_type, prompt_db_config,
-    create_header, create_step_progress, create_summary_table
+    print_banner, print_success, print_error, prompt_setup_type, 
+    run_command, wait_for_container_ready, run_in_container
 )
+from src.utils.settings import DEFAULT_CONFIG
 
 console = Console()
 
-# Default configuration
-DEFAULT_CONFIG = {
-    "DB_USER": "postgres",
-    "DB_PASSWORD": "postgres",
-    "DB_NAME": "islah_db",
-    "DB_HOST": "db",
-    "DB_PORT": "5432"
-}
 
 def get_user_input(prompt, default=None, required=True):
     """
@@ -59,7 +54,7 @@ def create_env_file(env_path: Path, config: Dict[str, str] = None) -> None:
     
     with open(env_path, "w") as env_file:
         env_file.write(env_content)
-    print("✓ Created .env file with default configuration")
+    print_success("✓ Created .env file with default configuration")
 
 def check_docker_compose():
     """
@@ -68,9 +63,9 @@ def check_docker_compose():
     try:
         subprocess.run(["docker", "--version"], check=True, capture_output=True)
         subprocess.run(["docker-compose", "--version"], check=True, capture_output=True)
-        print("✓ Docker et Docker Compose sont installés.")
+        print_success("✓ Docker et Docker Compose sont installés.")
     except FileNotFoundError:
-        print("Docker ou Docker Compose n'est pas installé. Veuillez l'installer avant de continuer.")
+        print_error("Docker ou Docker Compose n'est pas installé. Veuillez l'installer avant de continuer.")
         exit(1)
 
 def build_and_run_docker():
@@ -81,9 +76,9 @@ def build_and_run_docker():
         print("\n--- Lancement de Docker Compose ---")
         print("!!  Cela peut prendre un certain temps pour la première")
         subprocess.run(["docker-compose", "up", "--build", "-d"], check=True)
-        print("✓ Docker Compose a été lancé avec succès.")
+        print_success("✓ Docker Compose a été lancé avec succès.")
     except subprocess.CalledProcessError:
-        print("Une erreur est survenue lors de l'exécution de Docker Compose. Assurez-vous que Docker-desktop est en cours d'exécution.")
+        print_error("Une erreur est survenue lors de l'exécution de Docker Compose. Assurez-vous que Docker-desktop est en cours d'exécution.")
         exit(1)
 
 def stop_docker():
@@ -93,9 +88,9 @@ def stop_docker():
     try:
         print("\n--- Arrêt de Docker Compose ---")
         subprocess.run(["docker-compose", "down"], check=True)
-        print("✓ Docker Compose a été arrêté avec succès.")
+        print_success("✓ Docker Compose a été arrêté avec succès.")
     except subprocess.CalledProcessError:
-        print("Une erreur est survenue lors de l'arrêt de Docker Compose.")
+        print_error("Une erreur est survenue lors de l'arrêt de Docker Compose.")
         exit(1)
 
 def remove_docker_volumes():
@@ -105,9 +100,9 @@ def remove_docker_volumes():
     try:
         print("\n--- Suppression des volumes Docker ---")
         subprocess.run(["docker-compose", "down", "-v"], check=True)
-        print("✓ Les volumes Docker ont été supprimés avec succès.")
+        print_success("✓ Les volumes Docker ont été supprimés avec succès.")
     except subprocess.CalledProcessError:
-        print("Une erreur est survenue lors de la suppression des volumes Docker.")
+        print_error("Une erreur est survenue lors de la suppression des volumes Docker.")
         exit(1)
 
 def show_docker_logs():
@@ -118,7 +113,7 @@ def show_docker_logs():
         print("\n--- Affichage des logs Docker ---")
         subprocess.run(["docker-compose", "logs"], check=True)
     except subprocess.CalledProcessError:
-        print("Une erreur est survenue lors de l'affichage des logs Docker.")
+        print_error("Une erreur est survenue lors de l'affichage des logs Docker.")
         exit(1)
 
 def reset_docker():
@@ -128,301 +123,6 @@ def reset_docker():
     stop_docker()
     remove_docker_volumes()
     build_and_run_docker()
-
-def wait_for_container_ready(service: str, max_retries: int = 30) -> bool:
-    """Wait for container to be ready"""
-    for i in range(max_retries):
-        try:
-            result = run_command(f"docker-compose ps {service}", capture=True)
-            if "Up" in result.stdout:
-                console.print(f"  [green]✓[/] {service} is ready")
-                return True
-        except subprocess.CalledProcessError:
-            pass
-        time.sleep(1)
-    return False
-
-def run_in_container(command: str, service: str = "api", capture_output: bool = False) -> None:
-    """Run a command in a Docker container"""
-    try:
-        if not wait_for_container_ready(service):
-            console.print(f"[red]×[/] {service} is not ready")
-            sys.exit(1)
-
-        
-        # First, check if the container is actually running
-        status_check = subprocess.run(
-            ["docker-compose", "ps", "-q", service],
-            capture_output=True,
-            text=True
-        )
-        
-        if not status_check.stdout:
-            console.print(f"[red]×[/] Container {service} is not running")
-            sys.exit(1)
-
-        # Use docker-compose exec with -T flag and set a timeout
-        try:
-            result = subprocess.run(
-                ["docker-compose", "exec", "-T", service, "sh", "-c", command],
-                capture_output=True,
-                text=True,
-                check=True,
-                timeout=30  # Set a 30-second timeout
-            )
-            
-            if result.stdout.strip() and not capture_output:
-                print(result.stdout.strip())
-            
-            if result.stderr:
-                console.print(f"[yellow]Warning:[/] {result.stderr}")
-                
-        except subprocess.TimeoutExpired:
-            console.print(f"[red]×[/] Command timed out after 30 seconds: {command}")
-            console.print("[info]Showing container logs for debugging:")
-            subprocess.run(["docker-compose", "logs", service], check=False)
-            raise Exception("Command timed out")
-            
-    except subprocess.CalledProcessError as e:
-        console.print(f"[red]×[/] Command failed: {e}")
-        if e.stdout:
-            print("Output:", e.stdout)
-        if e.stderr:
-            console.print("[info]Showing container logs for debugging:")
-            subprocess.run(["docker-compose", "logs", service], check=False)
-        sys.exit(1)
-
-def db_cli():
-    """
-    Unified CLI for database operations
-    """
-    parser = argparse.ArgumentParser(description="Database management commands")
-    subparsers = parser.add_subparsers(dest="command", help="Available commands")
-
-    # Info command
-    subparsers.add_parser("info", help="Show database configuration")
-
-    # Migrate command
-    migrate_parser = subparsers.add_parser("migrate", help="Generate new migration")
-    migrate_parser.add_argument("-m", "--message", help="Migration message")
-
-    # Other commands
-    subparsers.add_parser("upgrade", help="Apply pending migrations")
-    subparsers.add_parser("downgrade", help="Rollback last migration")
-    subparsers.add_parser("history", help="Show migration history")
-    subparsers.add_parser("current", help="Show current version")
-    subparsers.add_parser("status", help="Show database status")
-    subparsers.add_parser("psql", help="Open PostgreSQL terminal")
-
-    # Admin management commands
-    admin_parser = subparsers.add_parser("admin", help="Admin user management")
-    admin_subparsers = admin_parser.add_subparsers(dest="admin_command", help="Admin commands")
-
-    # Create admin
-    create_parser = admin_subparsers.add_parser("create", help="Create new admin user")
-    create_parser.add_argument("--username", help="Admin username")
-    create_parser.add_argument("--password", help="Admin password")
-    create_parser.add_argument("--full-name", help="Admin full name")
-
-    # List admins
-    admin_subparsers.add_parser("list", help="List all admin users")
-
-    # Reset admin password
-    reset_parser = admin_subparsers.add_parser("reset-password", help="Reset admin password")
-    reset_parser.add_argument("username", help="Admin username")
-    reset_parser.add_argument("--password", help="New password")
-
-    args = parser.parse_args()
-
-    if args.command == "info":
-        show_db_info()
-    elif args.command == "migrate":
-        message = args.message or input("Enter migration message (press Enter for autogenerate): ").strip()
-        command = "poetry run alembic revision --autogenerate"
-        if message:
-            command += f" -m '{message}'"
-        run_in_container(command)
-        print("✓ Migration file generated successfully")
-    elif args.command == "upgrade":
-        db_upgrade()
-    elif args.command == "downgrade":
-        db_downgrade()
-    elif args.command == "history":
-        db_history()
-    elif args.command == "current":
-        db_current()
-    elif args.command == "status":
-        db_status()
-    elif args.command == "psql":
-        psql()
-    elif args.command == "admin":
-        if args.admin_command == "create":
-            create_admin(
-                username=args.username,
-                password=args.password,
-                full_name=args.full_name
-            )
-        elif args.admin_command == "list":
-            list_admins()
-        elif args.admin_command == "reset-password":
-            reset_admin_password(args.username, args.password)
-    else:
-        parser.print_help()
-
-def db_upgrade() -> None:
-    """
-    Apply all pending migrations.
-    """
-    run_in_container("poetry run alembic upgrade head")
-    print("✓ Database upgraded successfully")
-
-def db_downgrade() -> None:
-    """
-    Rollback the last migration.
-    """
-    run_in_container("poetry run alembic downgrade -1")
-    print("✓ Last migration reverted successfully")
-
-def db_history() -> None:
-    """
-    Show migration history.
-    """
-    run_in_container("poetry run alembic history")
-
-def db_current() -> None:
-    """
-    Show current migration version.
-    """
-    run_in_container("poetry run alembic current")
-
-def db_status() -> None:
-    """
-    Show database status and pending migrations.
-    """
-    run_in_container("poetry run alembic current")
-    print("\nPending migrations:")
-    run_in_container("poetry run alembic history -i")
-
-def create_admin(username: str = None, password: str = None, full_name: str = None) -> None:
-    """
-    Create admin user with optional custom credentials
-    """
-    if username or password or full_name:
-        # Create custom admin user
-        command = "poetry run python -m src.scripts.create_admin"
-        if username:
-            command += f" --username {username}"
-        if password:
-            command += f" --password {password}"
-        if full_name:
-            command += f" --full-name '{full_name}'"
-    else:
-        # Create default admin user
-        command = "poetry run python -m src.scripts.create_admin"
-    
-    try:
-        console.print("\nCreating admin user...")
-        run_in_container(command)
-        console.print("✓ Admin user created successfully")
-        
-        if not username and not password:
-            console.print("\nDefault admin credentials:")
-            console.print("  Username: admin")
-            console.print("  Password: admin123")
-    except subprocess.CalledProcessError as e:
-        console.print(f"Failed to create admin user: {e}")
-        sys.exit(1)
-
-def list_admins() -> None:
-    """
-    List all admin users
-    """
-    command = "poetry run python -m src.scripts.list_admins"
-    try:
-        console.print("\nListing admin users...")
-        run_in_container(command)
-    except subprocess.CalledProcessError as e:
-        console.print(f"Failed to list admin users: {e}")
-        sys.exit(1)
-
-def reset_admin_password(username: str, password: str = None) -> None:
-    """
-    Reset admin user password
-    """
-    command = f"poetry run python -m src.scripts.reset_admin_password --username {username}"
-    if password:
-        command += f" --password {password}"
-    
-    try:
-        console.print(f"\nResetting password for admin user '{username}'...")
-        run_in_container(command)
-        console.print("✓ Password reset successfully")
-    except subprocess.CalledProcessError as e:
-        console.print(f"Failed to reset admin password: {e}")
-        sys.exit(1)
-
-def get_db_credentials() -> Dict[str, str]:
-    """
-    Get database credentials from .env file or use defaults
-    """
-    load_dotenv()
-    return {
-        "user": os.getenv("DB_USER", DEFAULT_CONFIG["DB_USER"]),
-        "password": os.getenv("DB_PASSWORD", DEFAULT_CONFIG["DB_PASSWORD"]),
-        "host": os.getenv("DB_HOST", DEFAULT_CONFIG["DB_HOST"]),
-        "port": os.getenv("DB_PORT", DEFAULT_CONFIG["DB_PORT"]),
-        "database": os.getenv("DB_NAME", DEFAULT_CONFIG["DB_NAME"])
-    }
-
-def psql() -> None:
-    """
-    Open PostgreSQL interactive terminal using credentials from .env
-    """
-    db_config = get_db_credentials()
-    
-    # Build psql command with environment variables
-    psql_command = (
-        f"PGPASSWORD={db_config['password']} "
-        f"psql -U {db_config['user']} "
-        f"-d {db_config['database']}"
-    )
-    
-    try:
-        console.print(f"\n--- Connecting to {db_config['database']} as {db_config['user']} ---")
-        run_in_container(psql_command, service="db")
-    except subprocess.CalledProcessError as e:
-        console.print(f"Failed to connect to database: {e}")
-        console.print("\nTroubleshooting tips:")
-        console.print("1. Check your database credentials in .env file")
-        console.print("2. Make sure the database container is running (poetry run docker ps)")
-        console.print("3. Try resetting the containers (poetry run reset)")
-        sys.exit(1)
-
-def show_db_info() -> None:
-    """
-    Show current database connection information
-    """
-    db_config = get_db_credentials()
-    console.print("\nCurrent Database Configuration:")
-    console.print(f"  Host: {db_config['host']}")
-    console.print(f"  Port: {db_config['port']}")
-    console.print(f"  Database: {db_config['database']}")
-    console.print(f"  User: {db_config['user']}")
-
-def run_command(command: str, capture: bool = False) -> subprocess.CompletedProcess:
-    """Run a shell command with optional output capture"""
-    try:
-        return subprocess.run(
-            command.split(),
-            check=True,
-            capture_output=capture,
-            text=True
-        )
-    except subprocess.CalledProcessError as e:
-        if capture:
-            raise e
-        console.print(f"[red]× Command failed:[/] {e}")
-        sys.exit(1)
 
 async def setup() -> None:
     """
@@ -561,7 +261,7 @@ def show_help() -> None:
         "Admin": {
             "admin create": "Create admin user",
             "admin list": "List admin users",
-            "admin reset-password": "Reset password",
+            "admin reset-password <username>": "Reset password",
         }
     }
     

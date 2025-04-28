@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import argparse
 import bcrypt
 from src.utils.database import SessionLocal

@@ -1,4 +1,4 @@
-# src/models.py
+# -*- coding: utf-8 -*-
 
 from datetime import date, datetime, time
 from typing import List, Optional
