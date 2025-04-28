@@ -216,47 +216,57 @@ def wait_for_container_ready(service: str, max_retries: int = 30) -> bool:
         time.sleep(1)
     return False
 
-def run_in_container(command: str, service: str = "api", capture_output: bool = False) -> None:
-    """Run a command in a Docker container"""
+def run_in_container(
+    command: str,
+    service: str = "api",
+    capture_output: bool = False,
+    timeout: int = 30,
+    interactive: bool = False
+) -> None:
+    """Run a command inside a Docker container."""
     try:
         if not wait_for_container_ready(service):
             console.print(f"[red]×[/] {service} is not ready")
             sys.exit(1)
 
-        
-        # First, check if the container is actually running
+        # Check if the container is running
         status_check = subprocess.run(
             ["docker-compose", "ps", "-q", service],
             capture_output=True,
             text=True
         )
-        
+
         if not status_check.stdout:
             console.print(f"[red]×[/] Container {service} is not running")
             sys.exit(1)
 
-        # Use docker-compose exec with -T flag and set a timeout
-        try:
-            result = subprocess.run(
-                ["docker-compose", "exec", "-T", service, "sh", "-c", command],
-                capture_output=True,
-                text=True,
-                check=True,
-                timeout=30  # Set a 30-second timeout
-            )
-            
-            if result.stdout.strip() and not capture_output:
-                print(result.stdout.strip())
-            
-            if result.stderr:
-                console.print(f"[yellow]Warning:[/] {result.stderr}")
-                
-        except subprocess.TimeoutExpired:
-            console.print(f"[red]×[/] Command timed out after 30 seconds: {command}")
-            console.print("[info]Showing container logs for debugging:")
-            subprocess.run(["docker-compose", "logs", service], check=False)
-            raise Exception("Command timed out")
-            
+        full_command = ["docker-compose", "exec", "-T", service, "sh", "-c", command]
+
+        if interactive:
+            # Directly attach stdin, stdout, stderr for true interactive session
+            subprocess.run(full_command, check=True)
+        else:
+            try:
+                result = subprocess.run(
+                    full_command,
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                    timeout=timeout
+                )
+
+                if result.stdout.strip() and not capture_output:
+                    print(result.stdout.strip())
+
+                if result.stderr:
+                    console.print(f"[yellow]Warning:[/] {result.stderr}")
+
+            except subprocess.TimeoutExpired:
+                console.print(f"[red]×[/] Command timed out after {timeout} seconds: {command}")
+                console.print("[info]Showing container logs for debugging:")
+                subprocess.run(["docker-compose", "logs", service], check=False)
+                raise Exception("Command timed out")
+
     except subprocess.CalledProcessError as e:
         console.print(f"[red]×[/] Command failed: {e}")
         if e.stdout:

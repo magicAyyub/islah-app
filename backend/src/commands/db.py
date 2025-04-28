@@ -54,7 +54,7 @@ def psql() -> None:
     """
     db_config = get_db_credentials()
     
-    # Build psql command with environment variables
+    # Build psql command with environment variables psql -h localhost -p 5432 -U root -d data -W 
     psql_command = (
         f"PGPASSWORD={db_config['password']} "
         f"psql -U {db_config['user']} "
@@ -63,7 +63,7 @@ def psql() -> None:
     
     try:
         console.print(f"\n--- Connecting to {db_config['database']} as {db_config['user']} ---")
-        run_in_container(psql_command, service="db")
+        run_in_container(psql_command, service="db", interactive=True)
     except subprocess.CalledProcessError as e:
         console.print(f"Failed to connect to database: {e}")
         console.print("\nTroubleshooting tips:")
