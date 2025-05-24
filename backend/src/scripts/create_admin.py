@@ -2,11 +2,17 @@
 import argparse
 import bcrypt
 from src.utils.database import SessionLocal
-from src.models import User
+from src.app.models.user import User
 from src.utils.enums import UserRole
 from src.utils.console import (
     print_banner, print_success, print_error,
     print_info, print_warning, create_spinner, prompt_admin_creation
+)
+# Import all models to ensure relationships are properly registered
+from src.app.models import (
+    user, student, teacher, parent, subject,
+    grade, classroom, level, payment, notification,
+    attendance, dashboard
 )
 
 def create_admin_user(username: str = "admin", password: str = "admin123", full_name: str = "Admin User"):
@@ -28,12 +34,13 @@ def create_admin_user(username: str = "admin", password: str = "admin123", full_
             role=UserRole.ADMIN.value,  # Use .value to get the string value "admin"
             is_active=True
         )
-        
         db.add(admin)
         db.commit()
+        print_success(f"Admin user '{username}' created successfully!")
         
     except Exception as e:
         db.rollback()
+        print_error(f"Failed to create admin user: {str(e)}")
         raise e
     finally:
         db.close()

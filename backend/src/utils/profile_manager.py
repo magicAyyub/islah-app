@@ -4,7 +4,9 @@ from typing import Dict, Type, Optional, List, Tuple
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import exists
 
-from src.models import User, Teacher, Parent
+from src.app.models.user import User
+from src.app.models.teacher import Teacher
+from src.app.models.parent import Parent
 from src.utils.enums import UserRole
 
 class ProfileManager:

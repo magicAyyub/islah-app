@@ -4,7 +4,7 @@ These models are used to ensure consistency in the structure of API responses,
 including success and error responses, as well as paginated responses.
 """
 
-from typing import Generic, TypeVar, Optional, List, Dict, Any, Union
+from typing import Generic, TypeVar, Optional, List, Dict, Any
 from pydantic import BaseModel, Field, ConfigDict
 from pydantic.generics import GenericModel
 

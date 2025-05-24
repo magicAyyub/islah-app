@@ -7,19 +7,20 @@ It uses JWT for token management and SQLAlchemy for database interactions.
 
 from fastapi import Depends, status, Security
 from fastapi.security import OAuth2PasswordBearer
+from fastapi.openapi.utils import get_openapi
 from sqlalchemy.orm import Session
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
-from typing import Optional, List
+from typing import Optional, List, Any 
 import logging
 
 from src.utils.database import get_db
-from src.models import User
-from src.schemas import TokenData
+from src.app.models.user import User
+from src.app.schemas.auth import TokenData
 from src.utils.enums import UserRole
 from src.utils.error_handlers import APIError, UnauthorizedError
 from src.utils.settings import (
-    SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES,
+    SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, PROJECT_NAME, API_VERSION
 )
 
 # Configure logging
@@ -27,8 +28,51 @@ logger = logging.getLogger(__name__)
 
 # OAuth2 scheme for token authentication - make sure tokenUrl is correct
 oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl="/api/auth/token",  # Make sure this matches your actual token endpoint URL
+    tokenUrl=f"/api/{API_VERSION}/auth/token",  # Make sure this matches your actual token endpoint URL
 )
+
+# Custom OpenAPI schema to properly configure OAuth2 password flow
+def custom_openapi(app: Any) -> dict:
+    """
+    Custom OpenAPI schema to configure OAuth2 password flow.
+    """
+    if hasattr(app, "_openapi_schema"):
+        return app._openapi_schema
+    
+    openapi_schema = get_openapi(
+        title=PROJECT_NAME,
+        version="1.0.0",
+        description="API pour la gestion de l'école de la mosquée Islah",
+        routes=app.routes,
+    )
+    
+    # Initialize components if it doesn't exist
+    if "components" not in openapi_schema:
+        openapi_schema["components"] = {}
+    
+    # Configure OAuth2 password flow
+    openapi_schema["components"]["securitySchemes"] = {
+        "OAuth2PasswordBearer": {
+            "type": "oauth2",
+            "flows": {
+                "password": {
+                    "tokenUrl": f"/api/{API_VERSION}/auth/token",
+                    "scopes": {}
+                }
+            }
+        }
+    }
+    
+    # Apply security to all operations except /auth/token
+    for path_url, path_item in openapi_schema["paths"].items():
+        if not path_url.endswith("/auth/token"):  # Skip the token endpoint
+            for operation in path_item.values():
+                if "security" not in operation:
+                    operation["security"] = []
+                operation["security"].append({"OAuth2PasswordBearer": []})
+    
+    app._openapi_schema = openapi_schema
+    return app._openapi_schema
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()

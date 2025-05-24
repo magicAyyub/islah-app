@@ -4,8 +4,7 @@ This module provides functions to handle pagination of SQLAlchemy queries,
 including calculating pagination metadata and applying pagination to queries.
 """
 
-from typing import Dict, Any, List, TypeVar, Generic
-from pydantic import BaseModel
+from typing import Dict, Any, TypeVar
 
 T = TypeVar('T')
 

@@ -111,7 +111,6 @@ async def prompt_setup_type():
         message="Select setup type:",
         choices=[
             Choice("quick", "Quick setup (recommended for development)"),
-            Separator(),
             Choice("custom", "Custom setup (configure database settings)")
         ],
         default="quick",
@@ -279,6 +278,19 @@ def run_in_container(
 def run_command(command: str, capture: bool = False) -> subprocess.CompletedProcess:
     """Run a shell command with optional output capture"""
     try:
+        # Use shell=True for docker-compose commands
+        if "docker-compose" in command:
+            result = subprocess.run(
+                command,
+                shell=True,
+                check=True,
+                capture_output=True,  # Always capture output for docker-compose
+                text=True
+            )
+            if not capture and result.stdout:
+                print(result.stdout)
+            return result
+        # For other commands, split as before
         return subprocess.run(
             command.split(),
             check=True,
@@ -286,6 +298,18 @@ def run_command(command: str, capture: bool = False) -> subprocess.CompletedProc
             text=True
         )
     except subprocess.CalledProcessError as e:
+        if "docker-compose" in command:
+            console.print(f"[red]× Docker Compose Error:[/]")
+            if e.stdout:
+                console.print(f"[yellow]Output:[/]\n{e.stdout}")
+            if e.stderr:
+                console.print(f"[red]Error:[/]\n{e.stderr}")
+            # Show docker-compose logs for debugging
+            try:
+                console.print("\n[cyan]Container logs:[/]")
+                subprocess.run(["docker-compose", "logs"], check=False)
+            except:
+                pass
         if capture:
             raise e
         console.print(f"[red]× Command failed:[/] {e}")

@@ -21,14 +21,14 @@ export default function RegisterPage() {
     username: '',
     password: '',
     full_name: '',
-    role: 'staff' as const,
-  });
+    role: 'STAFF' as const,
+  }); 
 
   // Protect route - only allow admin access
   useEffect(() => {
     if (!user) {
       router.push('/login');
-    } else if (user.role !== 'admin') {
+    } else if (user.role !== 'ADMIN') {
       router.push('/'); // Redirect non-admin users to home
     }
   }, [user, router]);
@@ -56,7 +56,7 @@ export default function RegisterPage() {
   };
 
   // Don't render anything while checking authentication
-  if (!user || user.role !== 'admin') {
+  if (!user || user.role !== 'ADMIN') {
     return null;
   }
 
@@ -98,7 +98,7 @@ export default function RegisterPage() {
                       username: '',
                       password: '',
                       full_name: '',
-                      role: 'staff',
+                      role: 'STAFF',
                     });
                   }}
                   className="bg-[#6c63ff] hover:bg-[#5a52e0] transition-all duration-300"
@@ -190,9 +190,9 @@ export default function RegisterPage() {
                       onChange={handleInputChange}
                       required
                     >
-                      <option value="staff">Staff</option>
-                      <option value="teacher">Enseignant</option>
-                      <option value="parent">Parent</option>
+                      <option value="STAFF">Staff</option>
+                      <option value="TEACHER">Enseignant</option>
+                      <option value="PARENT">Parent</option>
                     </select>
                   </div>
 

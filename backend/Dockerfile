@@ -1,39 +1,35 @@
-# Use Python 3.10 base image
-FROM python:3.10-slim
+# Use Python 3.13 base image
+FROM python:3.13-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install poetry
+RUN pip install poetry
+
+# Copy dependency files
+COPY pyproject.toml poetry.lock ./
+
+# Configure poetry
+RUN poetry config virtualenvs.create false
+
+# Install dependencies without installing the root project
+RUN poetry install --no-interaction --no-ansi --no-root
 
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Poetry
-RUN pip install poetry
-
-# Copy only the files needed for poetry install first
-COPY pyproject.toml poetry.lock README.md ./
-
-# Configure poetry to not create a virtual environment inside the container
-RUN poetry config virtualenvs.create false
-
-# Install dependencies without the root package
-RUN poetry install --no-interaction --no-ansi --no-root
-
-# Now copy the rest of the application
+# Copy the rest of the application
 COPY . .
 
-# Install the root package
+# Install the project in development mode
 RUN poetry install --no-interaction --no-ansi
-
-# Make sure scripts are executable
-RUN chmod +x /app/src/manage.py
 
 # Set environment variables
 ENV PYTHONPATH=/app
-ENV PATH="/app:${PATH}"
 
 # Command to run the application
-CMD ["poetry", "run", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["poetry", "run", "uvicorn", "src.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

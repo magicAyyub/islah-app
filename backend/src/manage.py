@@ -7,6 +7,7 @@ and performing database operations.
 
 
 import sys
+import os
 from pathlib import Path
 import subprocess
 from typing import Dict
@@ -99,7 +100,7 @@ def remove_docker_volumes():
     """
     try:
         print("\n--- Suppression des volumes Docker ---")
-        subprocess.run(["docker-compose", "down", "-v"], check=True)
+        subprocess.run(["docker-compose", "down", "-v" ], check=True)
         print_success("✓ Les volumes Docker ont été supprimés avec succès.")
     except subprocess.CalledProcessError:
         print_error("Une erreur est survenue lors de la suppression des volumes Docker.")
@@ -122,7 +123,6 @@ def reset_docker():
     """
     stop_docker()
     remove_docker_volumes()
-    build_and_run_docker()
 
 async def setup() -> None:
     """
@@ -156,7 +156,8 @@ async def quick_setup() -> None:
         # Start services with informative output
         console.print("\n[bold cyan]● Starting Services[/]")
         console.print("  Starting containers...")
-        run_command("docker-compose up -d --build", capture=True)
+        os.system("docker-compose --version")
+        run_command(command="docker-compose up -d --build", capture=True)
         
         # Wait for services with status
         services = ["api", "db"]
@@ -167,11 +168,16 @@ async def quick_setup() -> None:
         # Setup database and admin with details
         console.print("\n[bold cyan]● Configuring Database[/]")
         console.print("  Running migrations...")
-        run_in_container("alembic upgrade head", capture_output=True)
+        # Run migrations from the project root
+        run_in_container(command="cd /app && alembic upgrade head", capture_output=True)
+        
+        # Create database tables
+        console.print("  Creating database tables...")
+        run_in_container(command="cd /app && python -m src.scripts.create_tables", capture_output=True)
         
         console.print("\n[bold cyan]● Creating Admin User[/]")
         console.print("  Setting up default admin account...")
-        run_in_container("python -m src.scripts.create_admin", capture_output=True)
+        run_in_container(command="cd /app && python -m src.scripts.create_admin", capture_output=True)
         
         # Show completion with compact credentials panel
         console.print("\n[bold green]✓ Setup Complete[/]")
@@ -277,6 +283,31 @@ def show_help() -> None:
             table.add_row(f"poetry run {cmd}", desc)
         
         console.print(table)
+
+def run_in_container(command: str, capture_output: bool = False) -> None:
+    """
+    Run a command in the API container.
+    
+    Args:
+        command: The command to run
+        capture_output: Whether to capture and return the output
+    """
+    try:
+        # Run command from /app directory
+        full_command = f"cd /app && {command}"
+        result = subprocess.run(
+            ["docker-compose", "exec", "-T", "api", "sh", "-c", full_command],
+            check=True,
+            capture_output=capture_output,
+            text=True
+        )
+        if capture_output:
+            return result.stdout
+    except subprocess.CalledProcessError as e:
+        print_error(f"Command failed: {e}")
+        print("Showing container logs for debugging:")
+        show_docker_logs()
+        raise
 
 # Update the poetry script entry point
 if __name__ == "__main__":

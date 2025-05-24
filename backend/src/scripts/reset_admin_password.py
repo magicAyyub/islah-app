@@ -2,7 +2,7 @@
 import argparse
 import bcrypt
 from src.utils.database import SessionLocal
-from src.models import User
+from src.app.models.user import User
 from src.utils.enums import UserRole
 
 def reset_admin_password(username: str, password: str = None):

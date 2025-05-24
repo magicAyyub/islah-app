@@ -26,7 +26,7 @@ def upgrade() -> None:
     
     if not existing_enums:
         connection.execute(
-            text("CREATE TYPE user_role AS ENUM ('admin', 'staff', 'teacher', 'parent')")
+            text("CREATE TYPE user_role AS ENUM ('ADMIN', 'STAFF', 'TEACHER', 'PARENT')")
         )
     
     # Create users table if it doesn't exist
@@ -36,7 +36,7 @@ def upgrade() -> None:
             sa.Column('id', sa.Integer(), nullable=False),
             sa.Column('username', sa.String(length=100), nullable=False),
             sa.Column('password_hash', sa.String(length=255), nullable=False),
-            sa.Column('role', postgresql.ENUM('admin', 'staff', 'teacher', 'parent', name='user_role', create_type=False), nullable=False),
+            sa.Column('role', postgresql.ENUM('ADMIN', 'STAFF', 'TEACHER', 'PARENT', name='user_role', create_type=False), nullable=False),
             sa.Column('full_name', sa.String(length=255), nullable=False),
             sa.Column('created_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=True),
             sa.Column('last_login', sa.DateTime(), nullable=True),

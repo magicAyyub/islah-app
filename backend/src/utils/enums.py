@@ -8,73 +8,73 @@ import enum
 from datetime import date
 
 class UserRole(str, enum.Enum):
-    ADMIN = "admin"
-    STAFF = "staff"
-    TEACHER = "teacher"
-    PARENT = "parent"
-    STUDENT = "student"
+    ADMIN = "ADMIN"
+    STAFF = "STAFF"
+    TEACHER = "TEACHER"
+    PARENT = "PARENT"
+    STUDENT = "STUDENT"
 
 class Gender(str, enum.Enum):
-    MALE = "male"
-    FEMALE = "female"
-    OTHER = "other"
+    MALE = "MALE"   
+    FEMALE = "FEMALE"
+    OTHER = "OTHER"
 
 class EnrollmentStatus(str, enum.Enum):
-    ACTIVE = "active"
-    PENDING = "pending"
-    COMPLETED = "completed"
-    WITHDRAWN = "withdrawn"
-    CANCELLED = "cancelled"
+    ACTIVE = "ACTIVE"
+    PENDING = "PENDING"
+    COMPLETED = "COMPLETED"
+    WITHDRAWN = "WITHDRAWN"
+    CANCELLED = "CANCELLED"
 
 class PaymentMethod(str, enum.Enum):
-    CASH = "cash"
-    BANK_TRANSFER = "bank_transfer"
-    CREDIT_CARD = "credit_card"
-    MOBILE_MONEY = "mobile_money"
-    CHECK = "check"
+    CASH = "CASH"
+    BANK_TRANSFER = "BANK_TRANSFER"
+    CREDIT_CARD = "CREDIT_CARD"
+    MOBILE_MONEY = "MOBILE_MONEY"
+    CHECK = "CHECK"
 
 class PaymentType(str, enum.Enum):
-    REGISTRATION = "registration"
-    TUITION = "tuition"
-    SUPPLIES = "supplies"
-    UNIFORM = "uniform"
-    ACTIVITY = "activity"
-    OTHER = "other"
+    REGISTRATION = "REGISTRATION"
+    TUITION = "TUITION"
+    SUPPLIES = "SUPPLIES"
+    UNIFORM = "UNIFORM"
+    ACTIVITY = "ACTIVITY"
+    OTHER = "OTHER"
 
 class PaymentStatus(str, enum.Enum):
-    PAID = "paid"
-    PENDING = "pending"
-    OVERDUE = "overdue"
-    CANCELLED = "cancelled"
+    PAID = "PAID"
+    PENDING = "PENDING"
+    OVERDUE = "OVERDUE"
+    CANCELLED = "CANCELLED"
 
 class AttendanceStatus(str, enum.Enum):
-    PRESENT = "present"
-    ABSENT = "absent"
-    LATE = "late"
-    EXCUSED = "excused"
+    PRESENT = "PRESENT"
+    ABSENT = "ABSENT"
+    LATE = "LATE"
+    EXCUSED = "EXCUSED"
 
 class ReportCardStatus(str, enum.Enum):
-    DRAFT = "draft"
-    PUBLISHED = "published"
-    ARCHIVED = "archived"
+    DRAFT = "DRAFT"
+    PUBLISHED = "PUBLISHED"
+    ARCHIVED = "ARCHIVED"
 
 class AccessRequestType(str, enum.Enum):
-    STUDENT_DATA = "student_data"
-    FINANCIAL_DATA = "financial_data"
-    REPORT_CARDS = "report_cards"
-    ADMIN_PANEL = "admin_panel"
-    OTHER = "other"
+    STUDENT_DATA = "STUDENT_DATA"
+    FINANCIAL_DATA = "FINANCIAL_DATA"
+    REPORT_CARDS = "REPORT_CARDS"
+    ADMIN_PANEL = "ADMIN_PANEL"
+    OTHER = "OTHER"
 
 class AccessRequestStatus(str, enum.Enum):
-    PENDING = "pending"
-    APPROVED = "approved"
-    REJECTED = "rejected"
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
 
 class NotificationType(str, enum.Enum):
-    INFO = "info"
-    ALERT = "alert"
-    SUCCESS = "success"
-    ERROR = "error"
+    INFO = "INFO"
+    ALERT = "ALERT"
+    SUCCESS = "SUCCESS"
+    ERROR = "ERROR"
 
 # Utility functions that might be shared between models and schemas
 def get_current_school_year():
