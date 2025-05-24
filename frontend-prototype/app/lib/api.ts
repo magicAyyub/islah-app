@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 interface RegisterData {
   username: string;
@@ -101,5 +101,33 @@ export async function logout() {
     throw new Error('Erreur lors de la déconnexion');
   }
 
+  return response.json();
+}
+
+export async function searchParents(query: string) {
+  const response = await fetch(`${API_BASE_URL}/parent?skip=0&limit=100&name=${encodeURIComponent(query)}`, {
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('token')}`,
+    },
+  });
+  if (!response.ok) {
+    throw new Error('Erreur lors de la recherche de parent');
+  }
+  return response.json();
+}
+
+export async function createParent(parentData: any) {
+  const response = await fetch(`${API_BASE_URL}/parents`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('token')}`,
+    },
+    body: JSON.stringify(parentData),
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Erreur lors de la création du parent');
+  }
   return response.json();
 } 

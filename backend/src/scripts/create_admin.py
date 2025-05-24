@@ -12,7 +12,7 @@ from src.utils.console import (
 from src.app.models import (
     user, student, teacher, parent, subject,
     grade, classroom, level, payment, notification,
-    attendance, dashboard
+    attendance
 )
 
 def create_admin_user(username: str = "admin", password: str = "admin123", full_name: str = "Admin User"):

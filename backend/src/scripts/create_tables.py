@@ -13,7 +13,7 @@ from src.utils.database import create_tables_if_not_exist
 from src.app.models import (
     user, student, teacher, parent, subject,
     grade, classroom, level, payment, notification,
-    attendance, dashboard
+    attendance
 )
 
 def main():
@@ -32,10 +32,7 @@ def main():
         level.Level,
         payment.Payment,
         notification.Notification,
-        attendance.Attendance,
-        dashboard.DashboardStat,
-        dashboard.DashboardQuickAction,
-        dashboard.RolePermission
+        attendance.Attendance
     ]
     
     # Create tables

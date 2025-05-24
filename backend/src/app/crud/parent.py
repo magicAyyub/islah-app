@@ -145,3 +145,4 @@ def delete_parent(db: Session, parent_id: int) -> Dict[str, Any]:
     except Exception as e:
         db.rollback()
         raise DatabaseError(detail=f"Unexpected error deleting parent: {str(e)}") 
+    

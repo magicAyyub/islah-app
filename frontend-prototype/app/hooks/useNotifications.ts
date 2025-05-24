@@ -1,5 +1,16 @@
 import { useState } from 'react';
-import { Notification, AdminAlert } from '../types/dashboard';
+
+type Notification = {
+  id: number;
+  title: string;
+  time: string;
+  read: boolean;
+};
+
+type AdminAlert = {
+  show: boolean;
+  message: string;
+};
 
 export const useNotifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([
