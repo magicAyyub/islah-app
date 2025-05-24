@@ -79,12 +79,26 @@ def create_teacher(db: Session, teacher: TeacherCreate) -> Teacher:
     try:
         validate_teacher_data(db, teacher)
         
+        # Create user first
+        from src.app.crud import user as user_crud
+        from src.app.schemas.user import UserCreate
+        
+        user_data = UserCreate(
+            username=teacher.username,
+            password_hash=teacher.password,
+            role=teacher.user_role,
+            full_name=f"{teacher.first_name} {teacher.last_name}"
+        )
+        
+        db_user = user_crud.create_user(db=db, user=user_data)
+        
+        # Create teacher with the new user_id
         db_teacher = Teacher(
             first_name=teacher.first_name,
             last_name=teacher.last_name,
             phone=teacher.phone,
             email=teacher.email,
-            user_id=teacher.user_id
+            user_id=db_user.id
         )
         
         db.add(db_teacher)

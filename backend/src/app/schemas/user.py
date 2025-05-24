@@ -9,7 +9,7 @@ class UserBase(BaseModel):
     full_name: str
 
 class UserCreate(UserBase):
-    password: str
+    password_hash: str
 
 class UserUpdate(BaseModel):
     username: Optional[str] = None

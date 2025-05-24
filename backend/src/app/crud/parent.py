@@ -78,6 +78,19 @@ def create_parent(db: Session, parent: ParentCreate) -> Parent:
     """Create a new parent."""
     try:
         validate_parent_data(db, parent)
+
+        from src.app.crud import user as user_crud
+        from src.app.schemas.user import UserCreate
+        
+        user_data = UserCreate(
+            username=parent.username,
+            password_hash=parent.password,
+            role=parent.user_role,
+            full_name=f"{parent.first_name} {parent.last_name}"
+        )
+
+        db_user = user_crud.create_user(db=db, user=user_data)
+
         
         db_parent = Parent(
             first_name=parent.first_name,
@@ -85,7 +98,7 @@ def create_parent(db: Session, parent: ParentCreate) -> Parent:
             phone=parent.phone,
             email=parent.email,
             address=parent.address,
-            user_id=parent.user_id
+            user_id=db_user.id
         )
         
         db.add(db_parent)
