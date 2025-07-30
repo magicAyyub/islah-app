@@ -15,13 +15,3 @@ Chaque classe a une place limitée d'élèves et on peu avoir plusieurs classes 
 
 Le système actuel est basé sur des feuilles de papier et quelques fois l'utilisation de classeur excel. Les inscriptions se font sur place et les parents doivent se déplacer pour inscrire leurs enfants. Les inscriptions se font en fonction des places disponibles. L'inscription est validée une fois le paiement effectué. Un paiement initial de frais d'inscription puis un paiement trimestriel. Le paiement se fait en espèèce, par chèque ou par Carte Bancaire. Un reçu est donné à chaque paiement. Rien n'est mis en place pour informer les parents de quelconque évènement, paiements à effectuer (L'école ne s'en rend pas compte si le parent lui même ne vient pas déclarer et régler par bonne foi), etc. Il n'y a pas de reinscription, les parents doivent remplir un formulaire d'inscriptions à chaque année scolaire, s'il ne le font pas à temps, ils perdent leur place au profit d'un autre enfant. Les enfant on un bulletin de note à chaque fin de trimestre, bulletin qui est fait à la main grâce à un modèle de feuille excel. Lorsqu'un enfant est absent, rien n'est remarqué et aucun suivi n'est fait. En cas de plainte, ou de revandication concernant un paiement, une recherche manuelle parmis les dossiers est faite pour retrouver la trace du paiement et le dossier de l'enfant, ce qui peut prendre du temps et n'est pas toujours trouvé. Un des problèmes récurrents est de savoir qui a fait quel inscription d'enfant au sein de l'équipe chargée des inscriptions ainsi en cas de quelconque soucis, il est difficile de remonter à la source.
 
-## Objectif
-
-Le système actuel est très peu fiable et peu pratique. L'objectif est de créer un système de gestion de l'école qui permettra de gérer les inscriptions, les paiements, les absences, les notes, les évènements, les informations des parents, les informations des enfants, les informations des enseignants, les informations des classes, les informations des niveaux, les informations des matières, les informations des horaires, les informations des salles, les informations des plannings, les informations des emplois du temps, les informations des bulletins de notes et bien d'autres. Le système doit être simple, intuitif, fiable, sécurisé et pratique. Il doit permettre de gérer l'école de A à Z.
-
-## Notes
-
-Un essaie de backend a été fait avec FastAPI, un framework python pour la création d'API REST. Il est très simple d'utilisation avec une documentation automatique afin de tester les différents endpoints. Il n'est pas encore terminé mais fonctionne. Il pourrait évoluer en fonction des besoins. [voir ici](backend/README.md).
-## MCD (peu évoluer)
-
-![MCD](mcd.png)
