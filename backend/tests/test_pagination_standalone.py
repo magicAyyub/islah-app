@@ -5,8 +5,9 @@ from sqlalchemy.orm import sessionmaker
 from datetime import datetime, date
 
 from app.main import app
-from app.database.models import Base, Student, Parent, Payment, Class, PaymentType, RegistrationStatus
+from app.database.models import Base, Student, Parent, Payment, Class, PaymentType, RegistrationStatus, User
 from app.database.session import get_db
+from app.services.auth_service import AuthService
 
 # Create test database
 SQLITE_DATABASE_URL = "sqlite:///./test_pagination.db"
@@ -51,6 +52,38 @@ def db_session():
         yield db
     finally:
         db.close()
+
+@pytest.fixture
+def admin_user(db_session):
+    """Create an admin user for testing."""
+    user = User(
+        username="admin",
+        email="admin@school.com",
+        first_name="Admin",
+        last_name="User",
+        role="admin",
+        password_hash=AuthService.get_password_hash("admin123"),
+        is_active=True,
+        created_at=datetime.utcnow()
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
+
+@pytest.fixture
+def admin_token(client, admin_user):
+    """Get admin authentication token."""
+    response = client.post("/auth/login", json={
+        "username": "admin",
+        "password": "admin123"
+    })
+    return response.json()["access_token"]
+
+@pytest.fixture
+def auth_headers(admin_token):
+    """Get authentication headers."""
+    return {"Authorization": f"Bearer {admin_token}"}
 
 @pytest.fixture
 def sample_data(db_session):
@@ -139,9 +172,9 @@ def sample_data(db_session):
     }
 
 class TestStudentPagination:
-    def test_basic_pagination(self, client, sample_data):
+    def test_basic_pagination(self, client, sample_data, auth_headers):
         """Test basic pagination functionality."""
-        response = client.get("/students?page=1&size=10")
+        response = client.get("/students?page=1&size=10", headers=auth_headers)
         assert response.status_code == 200
         
         data = response.json()
@@ -158,27 +191,27 @@ class TestStudentPagination:
         assert data["size"] == 10
         assert data["pages"] == 3
 
-    def test_second_page(self, client, sample_data):
+    def test_second_page(self, client, sample_data, auth_headers):
         """Test second page pagination."""
-        response = client.get("/students?page=2&size=10")
+        response = client.get("/students?page=2&size=10", headers=auth_headers)
         assert response.status_code == 200
         
         data = response.json()
         assert len(data["items"]) == 10
         assert data["page"] == 2
 
-    def test_last_page(self, client, sample_data):
+    def test_last_page(self, client, sample_data, auth_headers):
         """Test last page with remaining items."""
-        response = client.get("/students?page=3&size=10")
+        response = client.get("/students?page=3&size=10", headers=auth_headers)
         assert response.status_code == 200
         
         data = response.json()
         assert len(data["items"]) == 5  # Remaining students
         assert data["page"] == 3
 
-    def test_search_by_name(self, client, sample_data):
+    def test_search_by_name(self, client, sample_data, auth_headers):
         """Test search functionality."""
-        response = client.get("/students?search=Student1&size=50")
+        response = client.get("/students?search=Student1&size=50", headers=auth_headers)
         assert response.status_code == 200
         
         data = response.json()
@@ -189,9 +222,9 @@ class TestStudentPagination:
         for student in data["items"]:
             assert "Student1" in student["first_name"]
 
-    def test_filter_by_class(self, client, sample_data):
+    def test_filter_by_class(self, client, sample_data, auth_headers):
         """Test filtering by class."""
-        response = client.get("/students?class_id=1&size=50")
+        response = client.get("/students?class_id=1&size=50", headers=auth_headers)
         assert response.status_code == 200
         
         data = response.json()
@@ -199,9 +232,9 @@ class TestStudentPagination:
         expected_count = 13  # Students 0,2,4,6,8,10,12,14,16,18,20,22,24 (13 total)
         assert data["total"] == expected_count
 
-    def test_filter_by_registration_status(self, client, sample_data):
+    def test_filter_by_registration_status(self, client, sample_data, auth_headers):
         """Test filtering by registration status."""
-        response = client.get("/students?registration_status=CONFIRMED&size=50")
+        response = client.get("/students?registration_status=CONFIRMED&size=50", headers=auth_headers)
         assert response.status_code == 200
         
         data = response.json()
@@ -209,9 +242,9 @@ class TestStudentPagination:
         expected_count = 9
         assert data["total"] == expected_count
 
-    def test_sorting(self, client, sample_data):
+    def test_sorting(self, client, sample_data, auth_headers):
         """Test sorting functionality."""
-        response = client.get("/students?sort_by=first_name&sort_order=desc&size=50")
+        response = client.get("/students?sort_by=first_name&sort_order=desc&size=50", headers=auth_headers)
         assert response.status_code == 200
         
         data = response.json()
@@ -222,18 +255,18 @@ class TestStudentPagination:
             assert students[i]["first_name"] >= students[i + 1]["first_name"]
 
 class TestPaymentPagination:
-    def test_payment_pagination(self, client, sample_data):
+    def test_payment_pagination(self, client, sample_data, auth_headers):
         """Test payment pagination."""
-        response = client.get("/payments?page=1&size=5")
+        response = client.get("/payments?page=1&size=5", headers=auth_headers)
         assert response.status_code == 200
         
         data = response.json()
         assert len(data["items"]) == 5
         assert data["total"] == 15  # We created 15 payments
 
-    def test_payment_search(self, client, sample_data):
+    def test_payment_search(self, client, sample_data, auth_headers):
         """Test payment search by receipt number."""
-        response = client.get("/payments?search=REC2024001&size=50")
+        response = client.get("/payments?search=REC2024001&size=50", headers=auth_headers)
         assert response.status_code == 200
         
         data = response.json()
@@ -243,18 +276,18 @@ class TestPaymentPagination:
         for payment in data["items"]:
             assert "REC2024001" in payment["receipt_number"]
 
-    def test_payment_filter_by_type(self, client, sample_data):
+    def test_payment_filter_by_type(self, client, sample_data, auth_headers):
         """Test filtering payments by type."""
-        response = client.get("/payments?payment_type=INSCRIPTION&size=50")
+        response = client.get("/payments?payment_type=INSCRIPTION&size=50", headers=auth_headers)
         assert response.status_code == 200
         
         data = response.json()
         expected_count = 8  # First 8 payments are INSCRIPTION
         assert data["total"] == expected_count
 
-    def test_payment_filter_by_amount_range(self, client, sample_data):
+    def test_payment_filter_by_amount_range(self, client, sample_data, auth_headers):
         """Test filtering payments by amount range."""
-        response = client.get("/payments?min_amount=100&max_amount=250&size=50")
+        response = client.get("/payments?min_amount=100&max_amount=250&size=50", headers=auth_headers)
         assert response.status_code == 200
         
         data = response.json()
@@ -263,49 +296,49 @@ class TestPaymentPagination:
             assert 100 <= payment["amount"] <= 250
 
 class TestClassPagination:
-    def test_class_pagination(self, client, sample_data):
+    def test_class_pagination(self, client, sample_data, auth_headers):
         """Test class pagination."""
-        response = client.get("/classes?page=1&size=10")
+        response = client.get("/classes?page=1&size=10", headers=auth_headers)
         assert response.status_code == 200
         
         data = response.json()
         assert len(data["items"]) == 2  # We created 2 classes
         assert data["total"] == 2
 
-    def test_class_search(self, client, sample_data):
+    def test_class_search(self, client, sample_data, auth_headers):
         """Test class search."""
-        response = client.get("/classes?search=Maternelle&size=50")
+        response = client.get("/classes?search=Maternelle&size=50", headers=auth_headers)
         assert response.status_code == 200
         
         data = response.json()
         assert data["total"] == 2  # Both classes contain "Maternelle"
 
-    def test_class_filter_by_level(self, client, sample_data):
+    def test_class_filter_by_level(self, client, sample_data, auth_headers):
         """Test filtering classes by level."""
-        response = client.get("/classes?level=Maternelle%201&size=50")
+        response = client.get("/classes?level=Maternelle%201&size=50", headers=auth_headers)
         assert response.status_code == 200
         
         data = response.json()
         assert data["total"] == 1  # Only one class with "Maternelle 1"
 
 class TestPaginationEdgeCases:
-    def test_invalid_page_number(self, client, sample_data):
+    def test_invalid_page_number(self, client, sample_data, auth_headers):
         """Test handling of invalid page numbers."""
-        response = client.get("/students?page=0&size=10")
+        response = client.get("/students?page=0&size=10", headers=auth_headers)
         assert response.status_code == 422  # Validation error
 
-    def test_oversized_page(self, client, sample_data):
+    def test_oversized_page(self, client, sample_data, auth_headers):
         """Test requesting page beyond available data."""
-        response = client.get("/students?page=100&size=10")
+        response = client.get("/students?page=100&size=10", headers=auth_headers)
         assert response.status_code == 200
         
         data = response.json()
         assert len(data["items"]) == 0  # No items on page 100
         assert data["total"] == 25  # But total is still correct
 
-    def test_empty_results(self, client, sample_data):
+    def test_empty_results(self, client, sample_data, auth_headers):
         """Test pagination with no results."""
-        response = client.get("/students?search=NonexistentName&size=50")
+        response = client.get("/students?search=NonexistentName&size=50", headers=auth_headers)
         assert response.status_code == 200
         
         data = response.json()
