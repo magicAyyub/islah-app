@@ -1,4 +1,9 @@
 fastapi
+pytest
 uvicorn
 sqlalchemy
 pydantic
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+reportlab

@@ -68,12 +68,10 @@ class User(Base):
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, nullable=False)
-    email = Column(String, unique=True)
+    email = Column(String, unique=True, nullable=False)
     first_name = Column(String, nullable=False)
     last_name = Column(String, nullable=False)
+    password_hash = Column(String, nullable=False)
     role = Column(String, nullable=False)  # "admin", "registration", "teacher"
     is_active = Column(Boolean, default=True)
-    created_date = Column(DateTime, default=datetime.now)
-    amount = Column(Float)
-    payment_date = Column(DateTime)
-    payment_method = Column(String)
+    created_at = Column(DateTime, default=datetime.now)

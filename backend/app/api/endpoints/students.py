@@ -1,11 +1,87 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from typing import Optional
+from datetime import date
+
 from app.schemas.student import StudentCreate, Student
 from app.services import student_service
 from app.database.session import get_db
+from app.api.pagination import PaginatedResponse, paginate_query, create_paginated_response
+from app.api.search import StudentSearchFilters, apply_student_filters
+from app.database.models import Student as StudentModel
 
 router = APIRouter()
 
 @router.post("/", response_model=Student)
 def create_student(student: StudentCreate, db: Session = Depends(get_db)):
     return student_service.create_student(db=db, student=student)
+
+@router.get("/", response_model=PaginatedResponse[Student])
+def get_students(
+    # Pagination parameters
+    page: int = Query(1, ge=1, description="Page number"),
+    size: int = Query(20, ge=1, le=100, description="Page size"),
+    
+    # Search parameters
+    search: Optional[str] = Query(None, description="Search in student and parent names"),
+    class_id: Optional[int] = Query(None, description="Filter by class ID"),
+    academic_year: Optional[str] = Query(None, description="Filter by academic year"),
+    registration_status: Optional[str] = Query(None, description="Filter by registration status"),
+    gender: Optional[str] = Query(None, description="Filter by gender"),
+    age_min: Optional[int] = Query(None, ge=0, le=100, description="Minimum age"),
+    age_max: Optional[int] = Query(None, ge=0, le=100, description="Maximum age"),
+    
+    # Sorting
+    sort_by: Optional[str] = Query("first_name", description="Sort by field"),
+    sort_order: Optional[str] = Query("asc", pattern="^(asc|desc)$", description="Sort order"),
+    
+    db: Session = Depends(get_db)
+):
+    """
+    Get paginated list of students with search and filtering capabilities.
+    """
+    # Create search filters
+    filters = StudentSearchFilters(
+        search=search,
+        class_id=class_id,
+        academic_year=academic_year,
+        registration_status=registration_status,
+        gender=gender,
+        age_min=age_min,
+        age_max=age_max
+    )
+    
+    # Start with base query
+    query = db.query(StudentModel)
+    
+    # Apply search filters
+    query = apply_student_filters(query, filters)
+    
+    # Apply sorting
+    if sort_by and hasattr(StudentModel, sort_by):
+        sort_column = getattr(StudentModel, sort_by)
+        if sort_order == "desc":
+            query = query.order_by(sort_column.desc())
+        else:
+            query = query.order_by(sort_column.asc())
+    else:
+        # Default sorting
+        query = query.order_by(StudentModel.first_name.asc(), StudentModel.last_name.asc())
+    
+    # Apply pagination
+    paginated_query, pagination_metadata = paginate_query(query, page, size)
+    
+    # Execute query and get results
+    students = paginated_query.all()
+    
+    # Convert to response models
+    student_responses = [Student.model_validate(student) for student in students]
+    
+    return create_paginated_response(student_responses, pagination_metadata)
+
+@router.get("/{student_id}", response_model=Student)
+def get_student(student_id: int, db: Session = Depends(get_db)):
+    student = student_service.get_student(db=db, student_id=student_id)
+    if student is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+    return student
