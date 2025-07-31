@@ -8,12 +8,17 @@ from app.services import student_service
 from app.database.session import get_db
 from app.api.pagination import PaginatedResponse, paginate_query, create_paginated_response
 from app.api.search import StudentSearchFilters, apply_student_filters
-from app.database.models import Student as StudentModel
+from app.database.models import Student as StudentModel, User
+from app.api.dependencies import get_current_user
 
 router = APIRouter()
 
 @router.post("/", response_model=Student)
-def create_student(student: StudentCreate, db: Session = Depends(get_db)):
+def create_student(
+    student: StudentCreate, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)  # Require authentication
+):
     return student_service.create_student(db=db, student=student)
 
 @router.get("/", response_model=PaginatedResponse[Student])
@@ -35,7 +40,8 @@ def get_students(
     sort_by: Optional[str] = Query("first_name", description="Sort by field"),
     sort_order: Optional[str] = Query("asc", pattern="^(asc|desc)$", description="Sort order"),
     
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)  # Require authentication
 ):
     """
     Get paginated list of students with search and filtering capabilities.
@@ -80,7 +86,11 @@ def get_students(
     return create_paginated_response(student_responses, pagination_metadata)
 
 @router.get("/{student_id}", response_model=Student)
-def get_student(student_id: int, db: Session = Depends(get_db)):
+def get_student(
+    student_id: int, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)  # Require authentication
+):
     student = student_service.get_student(db=db, student_id=student_id)
     if student is None:
         raise HTTPException(status_code=404, detail="Student not found")

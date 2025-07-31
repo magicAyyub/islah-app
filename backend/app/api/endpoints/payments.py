@@ -8,12 +8,17 @@ from app.services import payment_service
 from app.database.session import get_db
 from app.api.pagination import PaginatedResponse, paginate_query, create_paginated_response
 from app.api.search import PaymentSearchFilters, apply_payment_filters
-from app.database.models import Payment
+from app.database.models import Payment, User
+from app.api.dependencies import get_current_user
 
 router = APIRouter()
 
 @router.post("/", response_model=PaymentResponse)
-def make_payment(payment: PaymentCreate, db: Session = Depends(get_db)):
+def make_payment(
+    payment: PaymentCreate, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)  # Require authentication
+):
     return payment_service.make_payment(db=db, payment=payment)
 
 @router.get("/", response_model=PaginatedResponse[PaymentResponse])
@@ -36,7 +41,8 @@ def get_payments(
     sort_by: Optional[str] = Query("payment_date", description="Sort by field"),
     sort_order: Optional[str] = Query("desc", pattern="^(asc|desc)$", description="Sort order"),
     
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)  # Require authentication
 ):
     """
     Get paginated list of payments with search and filtering capabilities.
