@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, DateTime, Float, Boolean, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, Date, DateTime, Float, Boolean, ForeignKey, Enum, Text
 from sqlalchemy.orm import declarative_base, relationship
 from datetime import datetime
 import enum
@@ -13,6 +13,27 @@ class RegistrationStatus(enum.Enum):
 class PaymentType(enum.Enum):
     INSCRIPTION = "inscription"
     QUARTERLY = "quarterly"
+
+class AttendanceStatus(enum.Enum):
+    PRESENT = "present"
+    ABSENT = "absent"
+    LATE = "late"
+    EXCUSED = "excused"
+
+class GradeType(enum.Enum):
+    QUIZ = "quiz"
+    TEST = "test"
+    EXAM = "exam"
+    HOMEWORK = "homework"
+    PROJECT = "project"
+    PARTICIPATION = "participation"
+
+class AcademicPeriod(enum.Enum):
+    FIRST_TERM = "first_term"
+    SECOND_TERM = "second_term"
+    THIRD_TERM = "third_term"
+    FIRST_SEMESTER = "first_semester"
+    SECOND_SEMESTER = "second_semester"
 
 class Student(Base):
     __tablename__ = 'students'
@@ -75,3 +96,62 @@ class User(Base):
     role = Column(String, nullable=False)  # "admin", "registration", "teacher"
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.now)
+
+class Subject(Base):
+    __tablename__ = 'subjects'
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)  # "Mathematics", "Arabic", "French"
+    code = Column(String, unique=True, nullable=False)  # "MATH", "ARAB", "FREN"
+    description = Column(Text)
+    teacher_id = Column(Integer, ForeignKey('users.id'))  # Assigned teacher
+    class_id = Column(Integer, ForeignKey('classes.id'))  # Class this subject is taught in
+    academic_year = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.now)
+    
+    # Relationships
+    teacher = relationship("User", backref="subjects_taught")
+    class_assigned = relationship("Class", backref="subjects")
+    grades = relationship("Grade", backref="subject")
+
+class Grade(Base):
+    __tablename__ = 'grades'
+    id = Column(Integer, primary_key=True, index=True)
+    student_id = Column(Integer, ForeignKey('students.id'), nullable=False)
+    subject_id = Column(Integer, ForeignKey('subjects.id'), nullable=False)
+    grade_value = Column(Float, nullable=False)  # The actual grade (0-20, 0-100, etc.)
+    max_grade = Column(Float, nullable=False, default=20)  # Maximum possible grade
+    grade_type = Column(Enum(GradeType), nullable=False)
+    academic_period = Column(Enum(AcademicPeriod), nullable=False)
+    academic_year = Column(String, nullable=False)
+    assessment_date = Column(Date, nullable=False)
+    comments = Column(Text)  # Teacher comments
+    recorded_by = Column(Integer, ForeignKey('users.id'))  # Teacher who recorded
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+    
+    # Relationships
+    student = relationship("Student", backref="grades")
+    recorded_by_user = relationship("User", backref="grades_recorded")
+
+class Attendance(Base):
+    __tablename__ = 'attendance'
+    id = Column(Integer, primary_key=True, index=True)
+    student_id = Column(Integer, ForeignKey('students.id'), nullable=False)
+    class_id = Column(Integer, ForeignKey('classes.id'), nullable=False)
+    attendance_date = Column(Date, nullable=False)
+    status = Column(Enum(AttendanceStatus), nullable=False)
+    arrival_time = Column(DateTime)  # For late arrivals
+    notes = Column(String)  # Reason for absence, etc.
+    recorded_by = Column(Integer, ForeignKey('users.id'))  # Staff who recorded
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+    
+    # Relationships
+    student = relationship("Student", backref="attendance_records")
+    class_attended = relationship("Class", backref="attendance_records")
+    recorded_by_user = relationship("User", backref="attendance_recorded")
+    
+    # Ensure one attendance record per student per day per class
+    __table_args__ = (
+        {'extend_existing': True}
+    )

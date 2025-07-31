@@ -1,6 +1,17 @@
-# 🏫 Islah School Management System - Backend API
+# Islah School Management System - Backend API
 
-A comprehensive REST API for managing school operations including student registration, payments, classes, and user authentication.
+A comprehensive REST API for managing school operations including student registration, payments, classes, **grade tracking, attendance monitoring**, and user authentication.
+
+## ✨ Key Features
+
+- **Student & Parent Management** - Complete registration and profile management
+- **Payment Processing** - Track tuition and fees with receipt generation
+- **Class Administration** - Manage classes, schedules, and capacity
+- **Academic Tracking** - Grade management with multiple assessment types
+- **Attendance Monitoring** - Daily attendance tracking with statistics
+- **Role-Based Authentication** - Secure access control for different user roles
+- **Analytics & Reporting** - Grade statistics and attendance reports
+- **Bulk Operations** - Efficient mass data entry for teachers
 
 ## Table of Contents
 
@@ -158,6 +169,40 @@ Visit **http://127.0.0.1:8000/docs** for Swagger UI with:
 | `POST` | `/classes/` | ✅ | Create new class |
 | `GET` | `/classes/{id}` | ✅ | Get class by ID |
 
+### 📚 Academic Management (Grade & Attendance Tracking)
+
+#### Subject Management
+| Method | Endpoint | Auth Required | Role Required | Description |
+|--------|----------|---------------|---------------|-------------|
+| `GET` | `/academic/subjects/` | ✅ | Any | List subjects (with filtering) |
+| `POST` | `/academic/subjects/` | ✅ | Admin/Teacher | Create new subject |
+| `GET` | `/academic/subjects/{id}` | ✅ | Any | Get subject by ID |
+| `PUT` | `/academic/subjects/{id}` | ✅ | Admin/Teacher | Update subject |
+| `DELETE` | `/academic/subjects/{id}` | ✅ | Admin | Delete subject |
+
+#### Grade Management
+| Method | Endpoint | Auth Required | Role Required | Description |
+|--------|----------|---------------|---------------|-------------|
+| `POST` | `/academic/grades/` | ✅ | Admin/Teacher | Record new grade |
+| `POST` | `/academic/grades/bulk` | ✅ | Admin/Teacher | Record multiple grades |
+| `GET` | `/academic/grades/{id}` | ✅ | Any | Get grade by ID |
+| `PUT` | `/academic/grades/{id}` | ✅ | Admin/Teacher | Update grade |
+| `DELETE` | `/academic/grades/{id}` | ✅ | Admin/Teacher | Delete grade |
+| `GET` | `/academic/students/{id}/grades` | ✅ | Any | Get student's grades |
+| `GET` | `/academic/classes/{id}/grades` | ✅ | Any | Get class grades |
+| `GET` | `/academic/students/{id}/grade-stats` | ✅ | Any | Get grade statistics |
+
+#### Attendance Management
+| Method | Endpoint | Auth Required | Role Required | Description |
+|--------|----------|---------------|---------------|-------------|
+| `POST` | `/academic/attendance/` | ✅ | Admin/Teacher | Record attendance |
+| `POST` | `/academic/attendance/bulk` | ✅ | Admin/Teacher | Record bulk attendance |
+| `GET` | `/academic/attendance/{id}` | ✅ | Any | Get attendance record |
+| `PUT` | `/academic/attendance/{id}` | ✅ | Admin/Teacher | Update attendance |
+| `GET` | `/academic/students/{id}/attendance` | ✅ | Any | Get student attendance |
+| `GET` | `/academic/classes/{id}/attendance` | ✅ | Any | Get class attendance by date |
+| `GET` | `/academic/students/{id}/attendance-stats` | ✅ | Any | Get attendance statistics |
+
 ##  Frontend Integration Guide
 
 ###  Setting Up API Client
@@ -238,6 +283,67 @@ class SchoolAPI {
     });
   }
 
+  // Academic Management
+  async getSubjects(filters = {}) {
+    const params = new URLSearchParams(filters);
+    return this.apiCall(`/academic/subjects/?${params}`);
+  }
+
+  async createSubject(subjectData) {
+    return this.apiCall('/academic/subjects/', {
+      method: 'POST',
+      body: JSON.stringify(subjectData),
+    });
+  }
+
+  async recordGrade(gradeData) {
+    return this.apiCall('/academic/grades/', {
+      method: 'POST',
+      body: JSON.stringify(gradeData),
+    });
+  }
+
+  async recordBulkGrades(bulkGradeData) {
+    return this.apiCall('/academic/grades/bulk', {
+      method: 'POST',
+      body: JSON.stringify(bulkGradeData),
+    });
+  }
+
+  async getStudentGrades(studentId, filters = {}) {
+    const params = new URLSearchParams(filters);
+    return this.apiCall(`/academic/students/${studentId}/grades?${params}`);
+  }
+
+  async getGradeStats(studentId, subjectId = null) {
+    const params = subjectId ? `?subject_id=${subjectId}` : '';
+    return this.apiCall(`/academic/students/${studentId}/grade-stats${params}`);
+  }
+
+  async recordAttendance(attendanceData) {
+    return this.apiCall('/academic/attendance/', {
+      method: 'POST',
+      body: JSON.stringify(attendanceData),
+    });
+  }
+
+  async recordBulkAttendance(bulkAttendanceData) {
+    return this.apiCall('/academic/attendance/bulk', {
+      method: 'POST',
+      body: JSON.stringify(bulkAttendanceData),
+    });
+  }
+
+  async getStudentAttendance(studentId, filters = {}) {
+    const params = new URLSearchParams(filters);
+    return this.apiCall(`/academic/students/${studentId}/attendance?${params}`);
+  }
+
+  async getAttendanceStats(studentId, filters = {}) {
+    const params = new URLSearchParams(filters);
+    return this.apiCall(`/academic/students/${studentId}/attendance-stats?${params}`);
+  }
+
   // Auth helpers
   logout() {
     this.token = null;
@@ -266,6 +372,82 @@ const newStudent = await api.createStudent({
   gender: 'M',
   // ... other fields
 });
+
+// Academic Management Examples
+
+// Create a subject
+const subject = await api.createSubject({
+  name: 'Mathematics',
+  code: 'MATH',
+  description: 'Basic Mathematics for Grade 1',
+  class_id: 1,
+  teacher_id: 2,
+  academic_year: '2023-2024'
+});
+
+// Record a grade
+const grade = await api.recordGrade({
+  student_id: 1,
+  subject_id: 1,
+  grade_value: 85.5,
+  max_grade: 100.0,
+  grade_type: 'exam',
+  academic_period: 'first_semester',
+  academic_year: '2023-2024',
+  assessment_date: '2023-10-15',
+  comments: 'Good performance'
+});
+
+// Record bulk grades for a quiz
+const bulkGrades = await api.recordBulkGrades({
+  subject_id: 1,
+  max_grade: 20.0,
+  grade_type: 'quiz',
+  academic_period: 'first_semester',
+  academic_year: '2023-2024',
+  assessment_date: '2023-10-20',
+  grades: [
+    { student_id: 1, grade_value: 18.0, comments: 'Excellent' },
+    { student_id: 2, grade_value: 16.5, comments: 'Good work' },
+    { student_id: 3, grade_value: 14.0, comments: 'Needs improvement' }
+  ]
+});
+
+// Record attendance
+const attendance = await api.recordAttendance({
+  student_id: 1,
+  class_id: 1,
+  attendance_date: '2023-10-25',
+  status: 'present',
+  notes: 'On time'
+});
+
+// Record bulk attendance for entire class
+const classAttendance = await api.recordBulkAttendance({
+  class_id: 1,
+  attendance_date: '2023-10-26',
+  attendance_records: [
+    { student_id: 1, status: 'present' },
+    { student_id: 2, status: 'late', notes: '10 minutes late' },
+    { student_id: 3, status: 'absent', notes: 'Sick leave' }
+  ]
+});
+
+// Get student's grades and statistics
+const studentGrades = await api.getStudentGrades(1, { 
+  subject_id: 1, 
+  academic_period: 'first_semester' 
+});
+
+const gradeStats = await api.getGradeStats(1, 1); // student_id, subject_id
+// Returns: { average_grade: 16.75, highest_grade: 18.0, lowest_grade: 14.0, total_assessments: 4 }
+
+// Get attendance statistics
+const attendanceStats = await api.getAttendanceStats(1, {
+  start_date: '2023-09-01',
+  end_date: '2023-12-31'
+});
+// Returns: { total_days: 85, present_days: 80, absent_days: 3, late_days: 2, attendance_rate: 96.47 }
 ```
 
 #### React Hook Example
@@ -432,6 +614,9 @@ pytest --cov=app
 # Run specific test file
 pytest tests/test_students.py
 
+# Run academic management tests
+pytest tests/test_academic.py
+
 # Run tests in verbose mode
 pytest -v
 
@@ -441,28 +626,97 @@ pytest tests/test_auth_standalone.py::TestAuthentication -v
 
 **Note**: All tests now include proper authentication and will pass with the security measures in place. The test suite includes:
 - **Authentication tests** (20 tests) - JWT token management, user roles, password security
+- **Academic management tests** (19 tests) - Grade & attendance tracking with enum validation
 - **Student management tests** (1 test) - CRUD operations with authentication
 - **Payment tests** (3 tests) - Payment processing with authentication
 - **Class management tests** (7 tests) - Class operations with authentication  
 - **Pagination & search tests** (17 tests) - Advanced querying with authentication
 - **Registration tests** (3 tests) - Student registration workflow
 
-## Database Schema
+## 📊 Database Schema
 
 ### Tables Overview
 
-- **users** - System users (admin, teachers)
+#### Core Management
+- **users** - System users (admin, teachers, staff)
 - **students** - Student information
 - **parents** - Parent/guardian information
-- **classes** - Class definitions
-- **payments** - Payment records
+- **classes** - Class definitions and schedules
+- **payments** - Payment records and transactions
+
+#### Academic Tracking (New!)
+- **subjects** - Academic subjects with teacher assignments
+- **grades** - Student assessment records and grades
+- **attendance** - Daily attendance tracking
+
+### Academic Data Models
+
+#### Subject Model
+```python
+{
+  "id": 1,
+  "name": "Mathematics",
+  "code": "MATH",
+  "description": "Basic Mathematics for Grade 1",
+  "teacher_id": 2,
+  "class_id": 1,
+  "academic_year": "2023-2024",
+  "created_at": "2023-09-01T10:00:00"
+}
+```
+
+#### Grade Model
+```python
+{
+  "id": 1,
+  "student_id": 1,
+  "subject_id": 1,
+  "grade_value": 85.5,
+  "max_grade": 100.0,
+  "grade_type": "exam",  # quiz, test, exam, homework, project, participation
+  "academic_period": "first_semester",  # first_term, second_term, third_term, first_semester, second_semester
+  "academic_year": "2023-2024",
+  "assessment_date": "2023-10-15",
+  "comments": "Good performance",
+  "recorded_by": 2,
+  "created_at": "2023-10-15T14:30:00"
+}
+```
+
+**Enum Values**: The API accepts enum values as lowercase strings (e.g., `"exam"`, `"first_semester"`, `"present"`). The system handles proper enum validation and conversion between Pydantic schemas and SQLAlchemy models.
+
+#### Attendance Model
+```python
+{
+  "id": 1,
+  "student_id": 1,
+  "class_id": 1,
+  "attendance_date": "2023-10-25",
+  "status": "present",  # present, absent, late, excused
+  "arrival_time": "08:35:00",
+  "notes": "Arrived 5 minutes late",
+  "recorded_by": 2,
+  "created_at": "2023-10-25T08:35:00"
+}
+```
 
 ### Key Relationships
 
+#### Core Relationships
 - Student → Parent (Many-to-One)
 - Student → Class (Many-to-One)
 - Payment → Student (Many-to-One)
 - Payment → User (processed_by)
+
+#### Academic Relationships
+- Subject → Teacher/User (Many-to-One)
+- Subject → Class (Many-to-One)
+- Grade → Student (Many-to-One)
+- Grade → Subject (Many-to-One)
+- Grade → User (recorded_by)
+- Attendance → Student (Many-to-One)
+- Attendance → Class (Many-to-One)
+- Attendance → User (recorded_by)
 
 ## Testing
 
@@ -491,6 +745,61 @@ curl -X POST "http://127.0.0.1:8000/students/" \
     "parent_id": 1,
     "academic_year": "2024-2025"
   }'
+
+# Academic Management Testing
+
+# Create a subject
+curl -X POST "http://127.0.0.1:8000/academic/subjects/" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Mathematics",
+    "code": "MATH",
+    "description": "Basic Mathematics",
+    "class_id": 1,
+    "teacher_id": 2,
+    "academic_year": "2023-2024"
+  }'
+
+# Record a grade
+curl -X POST "http://127.0.0.1:8000/academic/grades/" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "student_id": 1,
+    "subject_id": 1,
+    "grade_value": 85.5,
+    "max_grade": 100.0,
+    "grade_type": "exam",
+    "academic_period": "first_semester",
+    "academic_year": "2023-2024",
+    "assessment_date": "2023-10-15",
+    "comments": "Good performance"
+  }'
+
+# Record attendance
+curl -X POST "http://127.0.0.1:8000/academic/attendance/" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "student_id": 1,
+    "class_id": 1,
+    "attendance_date": "2023-10-25",
+    "status": "present",
+    "notes": "On time"
+  }'
+
+# Get student grades
+curl -X GET "http://127.0.0.1:8000/academic/students/1/grades" \
+  -H "Authorization: Bearer $TOKEN"
+
+# Get grade statistics
+curl -X GET "http://127.0.0.1:8000/academic/students/1/grade-stats?subject_id=1" \
+  -H "Authorization: Bearer $TOKEN"
+
+# Get attendance statistics
+curl -X GET "http://127.0.0.1:8000/academic/students/1/attendance-stats" \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
 ## Production Deployment
