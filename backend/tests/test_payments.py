@@ -38,9 +38,11 @@ def test_make_payment():
         # Create test class
         test_class = Class(
             id=1,
+            name="Grade 1 - Morning",
             level="Grade 1",
             time_slot="9:00-10:00",
-            capacity=20
+            capacity=20,
+            academic_year="2023-2024"
         )
         db.add(test_class)
         
@@ -53,7 +55,8 @@ def test_make_payment():
             place_of_birth="Test City",
             gender="Male",
             parent_id=1,
-            class_id=1
+            class_id=1,
+            academic_year="2023-2024"
         )
         db.add(test_student)
         db.commit()
@@ -64,7 +67,8 @@ def test_make_payment():
         payment_data = PaymentCreate(
             student_id=1,
             amount=150.00,
-            payment_method="Cash"
+            payment_method="Cash",
+            payment_type="inscription"
         )
         
         # Call the service directly
@@ -114,9 +118,11 @@ def test_make_payment_different_methods():
         
         test_class = Class(
             id=1,
+            name="Grade 1 - Morning",
             level="Grade 1",
             time_slot="9:00-10:00",
-            capacity=20
+            capacity=20,
+            academic_year="2023-2024"
         )
         db.add(test_class)
         
@@ -128,7 +134,8 @@ def test_make_payment_different_methods():
             place_of_birth="Test City",
             gender="Female",
             parent_id=1,
-            class_id=1
+            class_id=1,
+            academic_year="2023-2024"
         )
         db.add(test_student)
         db.commit()
@@ -143,7 +150,8 @@ def test_make_payment_different_methods():
             payment_data = PaymentCreate(
                 student_id=1,
                 amount=amount,
-                payment_method=method
+                payment_method=method,
+                payment_type="quarterly"
             )
             
             created_payment = make_payment(db=db, payment=payment_data)
@@ -188,9 +196,11 @@ def test_payment_student_relationship():
         
         test_class = Class(
             id=1,
+            name="Grade 1 - Morning",
             level="Grade 1",
             time_slot="9:00-10:00",
-            capacity=20
+            capacity=20,
+            academic_year="2023-2024"
         )
         db.add(test_class)
         
@@ -203,7 +213,8 @@ def test_payment_student_relationship():
             place_of_birth="Test City",
             gender="Female",
             parent_id=1,
-            class_id=1
+            class_id=1,
+            academic_year="2023-2024"
         )
         db.add(student1)
         
@@ -215,7 +226,8 @@ def test_payment_student_relationship():
             place_of_birth="Test City",
             gender="Male",
             parent_id=1,
-            class_id=1
+            class_id=1,
+            academic_year="2023-2024"
         )
         db.add(student2)
         db.commit()
@@ -224,11 +236,11 @@ def test_payment_student_relationship():
         from app.services.payment_service import make_payment
         
         # Payments for student 1
-        payment1 = make_payment(db, PaymentCreate(student_id=1, amount=100.0, payment_method="Cash"))
-        payment2 = make_payment(db, PaymentCreate(student_id=1, amount=150.0, payment_method="Credit Card"))
+        payment1 = make_payment(db, PaymentCreate(student_id=1, amount=100.0, payment_method="Cash", payment_type="inscription"))
+        payment2 = make_payment(db, PaymentCreate(student_id=1, amount=150.0, payment_method="Credit Card", payment_type="quarterly"))
         
         # Payment for student 2
-        payment3 = make_payment(db, PaymentCreate(student_id=2, amount=200.0, payment_method="Bank Transfer"))
+        payment3 = make_payment(db, PaymentCreate(student_id=2, amount=200.0, payment_method="Bank Transfer", payment_type="inscription"))
         
         # Test relationships
         # Check payments for student 1

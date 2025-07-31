@@ -9,6 +9,7 @@ class StudentCreate(BaseModel):
     gender: str
     parent_id: int
     class_id: int
+    academic_year: str
 
 class Student(StudentCreate):
     id: int

@@ -39,9 +39,11 @@ def test_create_student():
         # Create test class
         test_class = Class(
             id=1,
+            name="Grade 1 - Morning",
             level="Grade 1",
             time_slot="9:00-10:00",
-            capacity=20
+            capacity=20,
+            academic_year="2023-2024"
         )
         db.add(test_class)
         db.commit()
@@ -57,7 +59,8 @@ def test_create_student():
             place_of_birth="City",
             gender="Male",
             parent_id=1,
-            class_id=1
+            class_id=1,
+            academic_year="2023-2024"
         )
         
         # Call the service directly
