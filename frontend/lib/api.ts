@@ -1,0 +1,145 @@
+const API_BASE_URL = "http://127.0.0.1:8000"
+
+class SchoolAPI {
+  private token: string | null = null
+
+  setToken(token: string | null) {
+    this.token = token
+  }
+
+  private async apiCall(endpoint: string, options: RequestInit = {}) {
+    const config: RequestInit = {
+      headers: {
+        "Content-Type": "application/json",
+        ...(this.token && { Authorization: `Bearer ${this.token}` }),
+        ...options.headers,
+      },
+      ...options,
+    }
+
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, config)
+
+    if (response.status === 401) {
+      throw new Error("Authentication required")
+    }
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: "Unknown error" }))
+      throw new Error(error.detail || "API Error")
+    }
+
+    return response.json()
+  }
+
+  // Authentication
+  async login(username: string, password: string) {
+    return this.apiCall("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ username, password }),
+    })
+  }
+
+  async getCurrentUser() {
+    return this.apiCall("/auth/me")
+  }
+
+  // Students
+  async getStudents(page = 1, size = 20, search = "") {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      size: size.toString(),
+      ...(search && { search }),
+    })
+    return this.apiCall(`/students/?${params}`)
+  }
+
+  async createStudent(studentData: any) {
+    return this.apiCall("/students/", {
+      method: "POST",
+      body: JSON.stringify(studentData),
+    })
+  }
+
+  async updateStudent(id: number, studentData: any) {
+    return this.apiCall(`/students/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(studentData),
+    })
+  }
+
+  async getStudent(id: number) {
+    return this.apiCall(`/students/${id}`)
+  }
+
+  // Parents
+  async getParents() {
+    return this.apiCall("/parents/")
+  }
+
+  // Classes
+  async getClasses() {
+    return this.apiCall("/classes/")
+  }
+
+  async createClass(classData: any) {
+    return this.apiCall("/classes/", {
+      method: "POST",
+      body: JSON.stringify(classData),
+    })
+  }
+
+  // Payments
+  async getPayments(page = 1, size = 20) {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      size: size.toString(),
+    })
+    return this.apiCall(`/payments/?${params}`)
+  }
+
+  async createPayment(paymentData: any) {
+    return this.apiCall("/payments/", {
+      method: "POST",
+      body: JSON.stringify(paymentData),
+    })
+  }
+
+  // Academic Management
+  async getSubjects(filters = {}) {
+    const params = new URLSearchParams(filters)
+    return this.apiCall(`/academic/subjects/?${params}`)
+  }
+
+  async createSubject(subjectData: any) {
+    return this.apiCall("/academic/subjects/", {
+      method: "POST",
+      body: JSON.stringify(subjectData),
+    })
+  }
+
+  async recordGrade(gradeData: any) {
+    return this.apiCall("/academic/grades/", {
+      method: "POST",
+      body: JSON.stringify(gradeData),
+    })
+  }
+
+  async getStudentGrades(studentId: number, filters = {}) {
+    const params = new URLSearchParams(filters)
+    return this.apiCall(`/academic/students/${studentId}/grades?${params}`)
+  }
+
+  async recordAttendance(attendanceData: any) {
+    return this.apiCall("/academic/attendance/", {
+      method: "POST",
+      body: JSON.stringify(attendanceData),
+    })
+  }
+
+  async getStudentAttendance(studentId: number, filters = {}) {
+    const params = new URLSearchParams(filters)
+    return this.apiCall(`/academic/students/${studentId}/attendance?${params}`)
+  }
+}
+
+export const api = new SchoolAPI()
