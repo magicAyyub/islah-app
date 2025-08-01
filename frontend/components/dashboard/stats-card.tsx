@@ -32,14 +32,11 @@ export function StatsCard({ title, value, icon: Icon, color, isLoading }: StatsC
               {isLoading ? (
                 <Skeleton className="h-8 w-16" />
               ) : (
-                <motion.p
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", stiffness: 200, delay: 0.1 }}
+                <p
                   className="text-3xl font-bold text-gray-900"
                 >
                   {value}
-                </motion.p>
+                </p>
               )}
             </div>
             <div

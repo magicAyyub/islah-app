@@ -14,7 +14,7 @@ export function middleware(request: NextRequest) {
   }
 
   // For protected routes, check if user has token
-  // Note: In a real app, you'd validate the token here
+  // !Note: In a real app, validate the token here
   // For now, we'll handle auth validation in the client
   return NextResponse.next()
 }

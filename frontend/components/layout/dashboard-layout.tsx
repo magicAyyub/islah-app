@@ -22,6 +22,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useAuth } from "@/hooks/use-auth"
+import { ProfileDropdown } from "@/components/layout/profile-dropdown"
 import { cn } from "@/lib/utils"
 
 interface DashboardLayoutProps {
@@ -50,11 +51,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 1024) // lg breakpoint
     }
-    
+
     checkMobile()
-    window.addEventListener('resize', checkMobile)
-    
-    return () => window.removeEventListener('resize', checkMobile)
+    window.addEventListener("resize", checkMobile)
+
+    return () => window.removeEventListener("resize", checkMobile)
   }, [])
 
   useEffect(() => {
@@ -101,9 +102,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Sidebar */}
       <motion.div
         initial={false}
-        animate={isMobile ? {
-          x: sidebarOpen ? 0 : "-100%",
-        } : {}}
+        animate={
+          isMobile
+            ? {
+                x: sidebarOpen ? 0 : "-100%",
+              }
+            : {}
+        }
         className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl lg:z-30"
       >
         <div className="flex h-full flex-col">
@@ -181,29 +186,19 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           {/* Page title - dynamically generated from pathname */}
           <div className="flex-1">
             <h2 className="text-lg font-semibold text-gray-900">
-              {pathname === '/dashboard' && 'Tableau de bord'}
-              {pathname === '/students' && 'Gestion des élèves'}
-              {pathname === '/classes' && 'Gestion des classes'}
-              {pathname === '/academics' && 'Notes et évaluations'}
-              {pathname === '/attendance' && 'Gestion des présences'}
-              {pathname === '/payments' && 'Gestion des paiements'}
-              {pathname === '/reports' && 'Rapports'}
-              {pathname === '/settings' && 'Paramètres'}
+              {pathname === "/dashboard" && "Tableau de bord"}
+              {pathname === "/students" && "Gestion des élèves"}
+              {pathname === "/classes" && "Gestion des classes"}
+              {pathname === "/academics" && "Notes et évaluations"}
+              {pathname === "/attendance" && "Gestion des présences"}
+              {pathname === "/payments" && "Gestion des paiements"}
+              {pathname === "/reports" && "Rapports"}
+              {pathname === "/settings" && "Paramètres"}
             </h2>
           </div>
 
-          {/* User info in top bar */}
-          <div className="hidden md:flex items-center gap-3">
-            <Avatar className="h-8 w-8">
-              <AvatarFallback className="bg-emerald-600 text-white text-sm">
-                {user.first_name?.[0] || user.username[0].toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="text-sm">
-              <p className="font-medium text-gray-900">{user.first_name || user.username}</p>
-              <p className="text-gray-500 capitalize">{user.role}</p>
-            </div>
-          </div>
+          {/* Profile Dropdown */}
+          <ProfileDropdown user={user} onLogout={handleLogout} />
 
           {/* Mobile close button */}
           {sidebarOpen && (
