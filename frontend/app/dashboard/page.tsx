@@ -10,6 +10,9 @@ import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { StatsCard } from "@/components/dashboard/stats-card"
 import { RecentActivity } from "@/components/dashboard/recent-activity"
 import { QuickActions } from "@/components/dashboard/quick-actions"
+import { IslamicWelcome } from "@/components/dashboard/islamic-welcome"
+import { PrayerTimes } from "@/components/dashboard/prayer-times"
+import { IslamicQuote } from "@/components/dashboard/islamic-quote"
 
 interface DashboardStats {
   totalStudents: number
@@ -72,15 +75,8 @@ export default function DashboardPage() {
   return (
     <DashboardLayout>
       <div className="space-y-10">
-        {/* Welcome Section */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-emerald-600 to-blue-600 rounded-2xl p-8 text-white shadow-xl"
-        >
-          <h1 className="text-4xl font-bold mb-3">Bienvenue, {user?.first_name || user?.username} !</h1>
-          <p className="text-emerald-100 text-lg">Voici un aperçu de l'activité de l'école aujourd'hui</p>
-        </motion.div>
+        {/* Islamic Welcome Section */}
+        <IslamicWelcome userName={user?.first_name || user?.username} />
 
         {/* Stats Cards */}
         <motion.div
@@ -128,9 +124,10 @@ export default function DashboardPage() {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3 }}
-            className="lg:col-span-1"
+            className="lg:col-span-1 space-y-6"
           >
             <QuickActions userRole={user?.role} />
+            <PrayerTimes />
           </motion.div>
 
           {/* Recent Activity */}
@@ -138,9 +135,10 @@ export default function DashboardPage() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.4 }}
-            className="lg:col-span-2"
+            className="lg:col-span-2 space-y-6"
           >
             <RecentActivity />
+            <IslamicQuote />
           </motion.div>
         </div>
 
@@ -152,7 +150,7 @@ export default function DashboardPage() {
                 <Calendar className="w-6 h-6 text-emerald-600" />
                 Programme d'aujourd'hui
               </CardTitle>
-              <CardDescription className="text-base">Cours et activités prévus pour aujourd'hui</CardDescription>
+              <CardDescription className="text-base">Cours et activités prévues pour aujourd'hui</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-6">

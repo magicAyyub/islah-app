@@ -32,11 +32,7 @@ export function StatsCard({ title, value, icon: Icon, color, isLoading }: StatsC
               {isLoading ? (
                 <Skeleton className="h-8 w-16" />
               ) : (
-                <p
-                  className="text-3xl font-bold text-gray-900"
-                >
-                  {value}
-                </p>
+                <p className="text-3xl font-bold text-gray-900">{value}</p>
               )}
             </div>
             <div
