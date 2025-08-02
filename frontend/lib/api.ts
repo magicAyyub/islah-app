@@ -71,6 +71,12 @@ class SchoolAPI {
     return this.apiCall(`/students/${id}`)
   }
 
+  async deleteStudent(id: number) {
+    return this.apiCall(`/students/${id}`, {
+      method: "DELETE",
+    })
+  }
+
   // Parents
   async getParents() {
     return this.apiCall("/parents/")
@@ -92,7 +98,7 @@ class SchoolAPI {
 
   // Classes
   async getClasses() {
-    return this.apiCall("/classes/")
+    return this.apiCall("/classes/simple")
   }
 
   async createClass(classData: any) {

@@ -8,12 +8,17 @@ from app.services.class_service import (
 )
 from app.api.pagination import PaginatedResponse, paginate_query, create_paginated_response
 from app.api.search import ClassSearchFilters, apply_class_filters
-from app.database.models import Class as ClassModel
+from app.database.models import Class as ClassModel, User
+from app.api.dependencies import get_current_user
 
 router = APIRouter()
 
 @router.post("/", response_model=Class, status_code=201)
-def create_new_class(class_data: ClassCreate, db: Session = Depends(get_db)):
+def create_new_class(
+    class_data: ClassCreate, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)  # Require authentication
+):
     """Create a new class"""
     return create_class(db=db, class_data=class_data)
 
@@ -34,7 +39,8 @@ def read_classes(
     sort_by: Optional[str] = Query("name", description="Sort by field"),
     sort_order: Optional[str] = Query("asc", pattern="^(asc|desc)$", description="Sort order"),
     
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)  # Require authentication
 ):
     """Get paginated list of classes with search and filtering capabilities"""
     # Create search filters
@@ -73,6 +79,23 @@ def read_classes(
     class_responses = [Class.model_validate(class_obj) for class_obj in classes]
     
     return create_paginated_response(class_responses, pagination_metadata)
+
+@router.get("/simple", response_model=List[Class])
+def get_classes_simple(
+    academic_year: Optional[str] = Query(None, description="Filter by academic year"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)  # Require authentication
+):
+    """Get simple list of classes (for form selectors)"""
+    query = db.query(ClassModel)
+    
+    if academic_year:
+        query = query.filter(ClassModel.academic_year == academic_year)
+    
+    classes = query.order_by(ClassModel.level.asc(), ClassModel.name.asc()).all()
+    
+    # Convert to response models
+    return [Class.model_validate(cls) for cls in classes]
 
 @router.get("/{class_id}", response_model=Class)
 def read_class(class_id: int, db: Session = Depends(get_db)):

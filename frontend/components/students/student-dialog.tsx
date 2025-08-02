@@ -29,12 +29,12 @@ export function StudentDialog({ isOpen, onClose, student, onSave }: StudentDialo
     first_name: "",
     last_name: "",
     date_of_birth: "",
+    place_of_birth: "",
     gender: "",
     parent_id: "",
     class_id: "",
     academic_year: "2024-2025",
     registration_status: "pending",
-    notes: "",
   })
 
   useEffect(() => {
@@ -45,24 +45,24 @@ export function StudentDialog({ isOpen, onClose, student, onSave }: StudentDialo
           first_name: student.first_name,
           last_name: student.last_name,
           date_of_birth: student.date_of_birth,
+          place_of_birth: student.place_of_birth || "",
           gender: student.gender,
           parent_id: student.parent_id?.toString() || "",
           class_id: student.class_id?.toString() || "",
           academic_year: student.academic_year,
-          registration_status: student.registration_status,
-          notes: student.notes || "",
+          registration_status: student.registration_status || "pending",
         })
       } else {
         setFormData({
           first_name: "",
           last_name: "",
           date_of_birth: "",
+          place_of_birth: "",
           gender: "",
           parent_id: "",
           class_id: "",
           academic_year: "2024-2025",
           registration_status: "pending",
-          notes: "",
         })
       }
     }
@@ -152,6 +152,18 @@ export function StudentDialog({ isOpen, onClose, student, onSave }: StudentDialo
               />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="place_of_birth">Lieu de naissance</Label>
+              <Input
+                id="place_of_birth"
+                value={formData.place_of_birth}
+                onChange={(e) => setFormData({ ...formData, place_of_birth: e.target.value })}
+                placeholder="Lieu de naissance"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
               <Label htmlFor="gender">Genre *</Label>
               <Select value={formData.gender} onValueChange={(value) => setFormData({ ...formData, gender: value })}>
                 <SelectTrigger>
@@ -163,6 +175,7 @@ export function StudentDialog({ isOpen, onClose, student, onSave }: StudentDialo
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2"></div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -229,17 +242,6 @@ export function StudentDialog({ isOpen, onClose, student, onSave }: StudentDialo
                 </SelectContent>
               </Select>
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="Notes additionnelles..."
-              rows={3}
-            />
           </div>
 
           <div className="flex justify-end gap-3 pt-4">

@@ -33,12 +33,14 @@ export interface Student {
   first_name: string
   last_name: string
   date_of_birth: string
+  place_of_birth?: string
   gender: string
-  parent_id?: number
+  parent_id: number
   class_id?: number
-  registration_status: string
+  registration_status?: string
+  registration_date?: string
   academic_year: string
-  notes?: string
+  registered_by?: number
   parent?: Parent
   class?: Class
 }

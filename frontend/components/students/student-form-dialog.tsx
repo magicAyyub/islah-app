@@ -30,6 +30,7 @@ export function StudentFormDialog({ isOpen, onClose, student, onSave }: StudentF
     first_name: "",
     last_name: "",
     date_of_birth: "",
+    place_of_birth: "",
     gender: "",
     parent_id: "",
     class_id: "",
@@ -70,18 +71,20 @@ export function StudentFormDialog({ isOpen, onClose, student, onSave }: StudentF
           first_name: student.first_name,
           last_name: student.last_name,
           date_of_birth: student.date_of_birth,
+          place_of_birth: student.place_of_birth || "",
           gender: student.gender,
           parent_id: student.parent_id?.toString() || "",
           class_id: student.class_id?.toString() || "",
           academic_year: student.academic_year,
-          registration_status: student.registration_status,
-          notes: student.notes || "",
+          registration_status: student.registration_status || "pending",
+          notes: "",
         })
       } else {
         setFormData({
           first_name: "",
           last_name: "",
           date_of_birth: "",
+          place_of_birth: "",
           gender: "",
           parent_id: "",
           class_id: "",
@@ -203,6 +206,21 @@ export function StudentFormDialog({ isOpen, onClose, student, onSave }: StudentF
                 />
               </div>
               <div className="space-y-2">
+                <Label htmlFor="place_of_birth" className="text-base font-medium">
+                  Lieu de naissance
+                </Label>
+                <Input
+                  id="place_of_birth"
+                  value={formData.place_of_birth}
+                  onChange={(e) => setFormData({ ...formData, place_of_birth: e.target.value })}
+                  className="h-12 text-lg"
+                  placeholder="Lieu de naissance"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6">
+              <div className="space-y-2">
                 <Label htmlFor="gender" className="text-base font-medium">
                   Genre *
                 </Label>
@@ -261,19 +279,27 @@ export function StudentFormDialog({ isOpen, onClose, student, onSave }: StudentF
               <Label htmlFor="registration_status" className="text-base font-medium">
                 Statut d'inscription
               </Label>
-              <Select
-                value={formData.registration_status}
-                onValueChange={(value) => setFormData({ ...formData, registration_status: value })}
-              >
-                <SelectTrigger className="h-12 text-lg">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">En attente</SelectItem>
-                  <SelectItem value="confirmed">Confirmé</SelectItem>
-                  <SelectItem value="cancelled">Annulé</SelectItem>
-                </SelectContent>
-              </Select>
+              {student ? (
+                // Only show status selector for existing students (editing mode)
+                <Select
+                  value={formData.registration_status}
+                  onValueChange={(value) => setFormData({ ...formData, registration_status: value })}
+                >
+                  <SelectTrigger className="h-12 text-lg">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">En attente</SelectItem>
+                    <SelectItem value="confirmed">Confirmé</SelectItem>
+                    <SelectItem value="cancelled">Annulé</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                // For new students, show read-only pending status
+                <div className="h-12 px-3 py-2 border border-gray-200 rounded-md bg-gray-50 flex items-center text-lg text-gray-600">
+                  En attente (automatique pour nouveaux élèves)
+                </div>
+              )}
             </div>
 
             <Card className="bg-emerald-50 border-emerald-200">

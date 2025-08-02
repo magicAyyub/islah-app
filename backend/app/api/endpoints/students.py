@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from typing import Optional
 from datetime import date
 
-from app.schemas.student import StudentCreate, Student
+from app.schemas.student import StudentCreate, StudentUpdate, Student
 from app.services import student_service
 from app.database.session import get_db
 from app.api.pagination import PaginatedResponse, paginate_query, create_paginated_response
 from app.api.search import StudentSearchFilters, apply_student_filters
-from app.database.models import Student as StudentModel, User
+from app.database.models import Student as StudentModel, User, Parent, Class
 from app.api.dependencies import get_current_user
 
 router = APIRouter()
@@ -57,8 +57,11 @@ def get_students(
         age_max=age_max
     )
     
-    # Start with base query
-    query = db.query(StudentModel)
+    # Start with base query using selectinload for relationships
+    query = db.query(StudentModel).options(
+        selectinload(StudentModel.parent),
+        selectinload(StudentModel.__mapper__.relationships['class'])
+    )
     
     # Apply search filters
     query = apply_student_filters(query, filters)
@@ -95,3 +98,22 @@ def get_student(
     if student is None:
         raise HTTPException(status_code=404, detail="Student not found")
     return student
+
+@router.put("/{student_id}", response_model=Student)
+def update_student(
+    student_id: int,
+    student_update: StudentUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)  # Require authentication
+):
+    """Update an existing student"""
+    return student_service.update_student(db=db, student_id=student_id, student_update=student_update)
+
+@router.delete("/{student_id}")
+def delete_student(
+    student_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)  # Require authentication
+):
+    """Delete a student"""
+    return student_service.delete_student(db=db, student_id=student_id)
