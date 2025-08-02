@@ -24,7 +24,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useAuth } from "@/hooks/use-auth"
 import { ProfileDropdown } from "@/components/layout/profile-dropdown"
 import { cn } from "@/lib/utils"
-import { IslamicHeader } from "@/components/layout/islamic-header"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -87,7 +86,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
-      <IslamicHeader />
       <div className="flex">
         {/* Mobile sidebar backdrop */}
         <AnimatePresence>
@@ -180,15 +178,20 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
         {/* Main content */}
         <div className="flex-1 flex flex-col min-w-0 lg:ml-64">
-          {/* Top bar */}
-          <div className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-white/80 backdrop-blur-sm px-6">
+          {/* Top bar - Enhanced header */}
+          <div className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-white/90 backdrop-blur-md shadow-sm px-6">
             <Button variant="ghost" size="sm" className="lg:hidden" onClick={() => setSidebarOpen(true)}>
               <Menu className="w-5 h-5" />
             </Button>
 
-            {/* Page title - dynamically generated from pathname */}
-            <div className="flex-1">
-
+            {/* Page title and Islamic greeting */}
+            <div className="flex-1 flex items-center gap-4">
+              <div className="hidden md:flex items-center gap-3">
+                <div>
+                  <p className="text-sm text-emerald-600 font-arabic">بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيم</p>
+                  <p className="text-xs text-gray-500">Au nom d'Allah, le Tout Miséricordieux, le Très Miséricordieux.</p>
+                </div>
+              </div>
             </div>
 
             {/* Profile Dropdown */}

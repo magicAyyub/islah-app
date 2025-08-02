@@ -294,32 +294,31 @@ export default function StudentsPage() {
             </CardContent>
           </Card>
         </motion.div>
-
-        {/* Enhanced Student Form Dialog */}
-        <StudentFormDialog
-          isOpen={isFormOpen}
-          onClose={() => setIsFormOpen(false)}
-          student={selectedStudent}
-          onSave={handleStudentSaved}
-        />
-
-        {/* Student Profile Dialog */}
-        {profileStudentId && (
-          <StudentProfile
-            studentId={profileStudentId}
-            isOpen={isProfileOpen}
-            onClose={() => {
-              setIsProfileOpen(false)
-              setProfileStudentId(null)
-            }}
-            onEdit={(student) => {
-              setIsProfileOpen(false)
-              setProfileStudentId(null)
-              handleEditStudent(student)
-            }}
-          />
-        )}
       </div>
+
+      {/* Modal Dialogs - Outside the spaced container for proper positioning */}
+      <StudentFormDialog
+        isOpen={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
+        student={selectedStudent}
+        onSave={handleStudentSaved}
+      />
+
+      {profileStudentId && (
+        <StudentProfile
+          studentId={profileStudentId}
+          isOpen={isProfileOpen}
+          onClose={() => {
+            setIsProfileOpen(false)
+            setProfileStudentId(null)
+          }}
+          onEdit={(student) => {
+            setIsProfileOpen(false)
+            setProfileStudentId(null)
+            handleEditStudent(student)
+          }}
+        />
+      )}
     </DashboardLayout>
   )
 }
