@@ -188,16 +188,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
             {/* Page title - dynamically generated from pathname */}
             <div className="flex-1">
-              <h2 className="text-lg font-semibold text-gray-900">
-                {pathname === "/dashboard" && "Tableau de bord"}
-                {pathname === "/students" && "Gestion des élèves"}
-                {pathname === "/classes" && "Gestion des classes"}
-                {pathname === "/academics" && "Notes et évaluations"}
-                {pathname === "/attendance" && "Gestion des présences"}
-                {pathname === "/payments" && "Gestion des paiements"}
-                {pathname === "/reports" && "Rapports"}
-                {pathname === "/settings" && "Paramètres"}
-              </h2>
+
             </div>
 
             {/* Profile Dropdown */}

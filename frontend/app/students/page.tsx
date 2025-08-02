@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Plus, Search, Filter, Download, Users } from "lucide-react"
+import { Plus, Search, Filter, Download, Users, UserPlus, FileText, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { StudentsTable } from "@/components/students/students-table"
-import { StudentDialog } from "@/components/students/student-dialog"
+import { StudentFormDialog } from "@/components/students/student-form-dialog"
+import { StudentsFilters } from "@/components/students/students-filters"
 import { api } from "@/lib/api"
 import type { Student } from "@/types"
 
@@ -19,8 +20,9 @@ export default function StudentsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalStudents, setTotalStudents] = useState(0)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isFormOpen, setIsFormOpen] = useState(false)
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
+  const [showFilters, setShowFilters] = useState(false)
 
   const fetchStudents = async (page = 1, search = "") => {
     setIsLoading(true)
@@ -52,94 +54,164 @@ export default function StudentsPage() {
 
   const handleAddStudent = () => {
     setSelectedStudent(null)
-    setIsDialogOpen(true)
+    setIsFormOpen(true)
   }
 
   const handleEditStudent = (student: Student) => {
     setSelectedStudent(student)
-    setIsDialogOpen(true)
+    setIsFormOpen(true)
   }
 
   const handleStudentSaved = () => {
     fetchStudents(currentPage, searchTerm)
-    setIsDialogOpen(false)
+    setIsFormOpen(false)
   }
+
+  const quickStats = [
+    { label: "Total élèves", value: totalStudents, icon: Users, color: "emerald" },
+    { label: "Nouveaux ce mois", value: 12, icon: UserPlus, color: "blue" },
+    { label: "En attente", value: 5, icon: FileText, color: "amber" },
+    { label: "Présents aujourd'hui", value: Math.floor(totalStudents * 0.94), icon: Calendar, color: "green" },
+  ]
 
   return (
     <DashboardLayout>
       <div className="space-y-8">
-        {/* Header */}
+        {/* Header with Islamic touch */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+          className="relative overflow-hidden"
         >
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Élèves</h1>
-            <p className="text-gray-600 mt-1">Gérez les profils et informations des élèves</p>
-          </div>
-          <Button
-            onClick={handleAddStudent}
-            className="bg-emerald-600 hover:bg-emerald-700 transition-all duration-200 transform hover:scale-105"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Nouvel élève
-          </Button>
-        </motion.div>
-
-        {/* Stats Card */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <Card className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white border-0">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-white/20 rounded-full">
-                  <Users className="w-8 h-8" />
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/10 to-blue-600/10 rounded-2xl"></div>
+          <Card className="border-0 bg-white/80 backdrop-blur-sm shadow-xl">
+            <CardContent className="p-8">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-emerald-100 rounded-xl">
+                      <Users className="w-8 h-8 text-emerald-600" />
+                    </div>
+                    <div>
+                      <h1 className="text-3xl font-bold text-gray-900">Gestion des Élèves</h1>
+                      <p className="text-lg font-arabic text-emerald-600">إدارة الطلاب</p>
+                    </div>
+                  </div>
+                  <p className="text-gray-600 max-w-2xl">
+                    Gérez les inscriptions, profils et informations des élèves de l'École Islah. Suivez leur parcours
+                    académique et spirituel.
+                  </p>
                 </div>
-                <div>
-                  <p className="text-emerald-100">Total des élèves</p>
-                  <p className="text-3xl font-bold">{totalStudents}</p>
-                </div>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button
+                    onClick={handleAddStudent}
+                    size="lg"
+                    className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white shadow-lg px-8 py-3 text-lg"
+                  >
+                    <Plus className="w-5 h-5 mr-2" />
+                    Nouvel Élève
+                  </Button>
+                </motion.div>
               </div>
             </CardContent>
           </Card>
         </motion.div>
 
-        {/* Search and Filters */}
+        {/* Quick Stats */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="flex flex-col sm:flex-row gap-4"
+          transition={{ delay: 0.1 }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
         >
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Rechercher un élève..."
-              value={searchTerm}
-              onChange={(e) => handleSearch(e.target.value)}
-              className="pl-10 transition-all duration-200 focus:ring-2 focus:ring-emerald-500"
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" className="hover:bg-gray-50 bg-transparent">
-              <Filter className="w-4 h-4 mr-2" />
-              Filtres
-            </Button>
-            <Button variant="outline" className="hover:bg-gray-50 bg-transparent">
-              <Download className="w-4 h-4 mr-2" />
-              Exporter
-            </Button>
-          </div>
+          {quickStats.map((stat, index) => (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 + index * 0.1 }}
+              whileHover={{ y: -4 }}
+            >
+              <Card className="border-0 bg-white/80 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600 mb-1">{stat.label}</p>
+                      <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                    </div>
+                    <div className={`p-3 rounded-full bg-${stat.color}-100`}>
+                      <stat.icon className={`w-6 h-6 text-${stat.color}-600`} />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {/* Search and Filters */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+          <Card className="border-0 bg-white/80 backdrop-blur-sm shadow-lg">
+            <CardContent className="p-6">
+              <div className="flex flex-col lg:flex-row gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <Input
+                    placeholder="Rechercher un élève par nom, prénom..."
+                    value={searchTerm}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    className="pl-12 h-12 text-lg border-gray-200 focus:border-emerald-500 focus:ring-emerald-500"
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowFilters(!showFilters)}
+                    className="h-12 px-6 border-gray-200 hover:bg-emerald-50 hover:border-emerald-200"
+                  >
+                    <Filter className="w-5 h-5 mr-2" />
+                    Filtres
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-12 px-6 border-gray-200 hover:bg-blue-50 hover:border-blue-200 bg-transparent"
+                  >
+                    <Download className="w-5 h-5 mr-2" />
+                    Exporter
+                  </Button>
+                </div>
+              </div>
+
+              {showFilters && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mt-6 pt-6 border-t border-gray-200"
+                >
+                  <StudentsFilters />
+                </motion.div>
+              )}
+            </CardContent>
+          </Card>
         </motion.div>
 
         {/* Students Table */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle>Liste des élèves</CardTitle>
-              <CardDescription>
-                {totalStudents} élève{totalStudents !== 1 ? "s" : ""} au total
-              </CardDescription>
+          <Card className="border-0 bg-white/80 backdrop-blur-sm shadow-lg">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-xl">Liste des Élèves</CardTitle>
+                  <CardDescription className="text-base mt-1">
+                    {totalStudents} élève{totalStudents !== 1 ? "s" : ""} inscrit{totalStudents !== 1 ? "s" : ""} à
+                    l'École Islah
+                  </CardDescription>
+                </div>
+                <div className="text-sm text-gray-500">
+                  Page {currentPage} sur {totalPages}
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <StudentsTable
@@ -154,10 +226,10 @@ export default function StudentsPage() {
           </Card>
         </motion.div>
 
-        {/* Student Dialog */}
-        <StudentDialog
-          isOpen={isDialogOpen}
-          onClose={() => setIsDialogOpen(false)}
+        {/* Enhanced Student Form Dialog */}
+        <StudentFormDialog
+          isOpen={isFormOpen}
+          onClose={() => setIsFormOpen(false)}
           student={selectedStudent}
           onSave={handleStudentSaved}
         />

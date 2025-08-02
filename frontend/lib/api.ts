@@ -76,6 +76,20 @@ class SchoolAPI {
     return this.apiCall("/parents/")
   }
 
+  async createParent(parentData: any) {
+    return this.apiCall("/parents/", {
+      method: "POST",
+      body: JSON.stringify(parentData),
+    })
+  }
+
+  async updateParent(id: number, parentData: any) {
+    return this.apiCall(`/parents/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(parentData),
+    })
+  }
+
   // Classes
   async getClasses() {
     return this.apiCall("/classes/")
