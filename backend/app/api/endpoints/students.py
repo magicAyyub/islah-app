@@ -60,7 +60,8 @@ def get_students(
     # Start with base query using selectinload for relationships
     query = db.query(StudentModel).options(
         selectinload(StudentModel.parent),
-        selectinload(StudentModel.__mapper__.relationships['class'])
+        selectinload(StudentModel.__mapper__.relationships['class']),
+        selectinload(StudentModel.flags)
     )
     
     # Apply search filters
@@ -117,3 +118,38 @@ def delete_student(
 ):
     """Delete a student"""
     return student_service.delete_student(db=db, student_id=student_id)
+
+@router.post("/{student_id}/expel")
+def expel_student(
+    student_id: int,
+    reason: str = Query(..., description="Reason for expulsion"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)  # Require authentication
+):
+    """
+    Expel a student - this completely removes the student and all related data from the system.
+    This action is irreversible and should be used only in serious cases.
+    """
+    return student_service.expel_student(db=db, student_id=student_id, reason=reason, expelled_by=current_user.id)
+
+@router.post("/{student_id}/flag")
+def flag_student(
+    student_id: int,
+    flag_type: str = Query(..., description="Type of flag (payment_issue, bounced_check, late_payment, etc.)"),
+    reason: str = Query(..., description="Reason for flagging"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)  # Require authentication
+):
+    """
+    Flag a student for tracking purposes (payment issues, behavior, etc.)
+    """
+    return student_service.flag_student(db=db, student_id=student_id, flag_type=flag_type, reason=reason, flagged_by=current_user.id)
+
+@router.delete("/{student_id}/flag")
+def unflag_student(
+    student_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)  # Require authentication
+):
+    """Remove flag from student"""
+    return student_service.unflag_student(db=db, student_id=student_id)

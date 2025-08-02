@@ -44,11 +44,17 @@ class SchoolAPI {
   }
 
   // Students
-  async getStudents(page = 1, size = 20, search = "") {
+  async getStudents(page = 1, size = 20, search = "", filters: Record<string, any> = {}) {
     const params = new URLSearchParams({
       page: page.toString(),
       size: size.toString(),
       ...(search && { search }),
+      ...Object.entries(filters).reduce((acc, [key, value]) => {
+        if (value && value !== "all") {
+          acc[key] = String(value)
+        }
+        return acc
+      }, {} as Record<string, string>),
     })
     return this.apiCall(`/students/?${params}`)
   }
@@ -75,6 +81,29 @@ class SchoolAPI {
     return this.apiCall(`/students/${id}`, {
       method: "DELETE",
     })
+  }
+
+  async expelStudent(id: number, reason: string) {
+    return this.apiCall(`/students/${id}/expel?reason=${encodeURIComponent(reason)}`, {
+      method: "POST",
+    })
+  }
+
+  async flagStudent(id: number, flagType: string, reason: string) {
+    return this.apiCall(`/students/${id}/flag?flag_type=${encodeURIComponent(flagType)}&reason=${encodeURIComponent(reason)}`, {
+      method: "POST",
+    })
+  }
+
+  async unflagStudent(id: number) {
+    return this.apiCall(`/students/${id}/flag`, {
+      method: "DELETE",
+    })
+  }
+
+  // Statistics
+  async getStudentStatistics() {
+    return this.apiCall("/stats/students")
   }
 
   // Parents

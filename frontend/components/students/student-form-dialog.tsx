@@ -279,27 +279,21 @@ export function StudentFormDialog({ isOpen, onClose, student, onSave }: StudentF
               <Label htmlFor="registration_status" className="text-base font-medium">
                 Statut d'inscription
               </Label>
-              {student ? (
-                // Only show status selector for existing students (editing mode)
-                <Select
-                  value={formData.registration_status}
-                  onValueChange={(value) => setFormData({ ...formData, registration_status: value })}
-                >
-                  <SelectTrigger className="h-12 text-lg">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">En attente</SelectItem>
-                    <SelectItem value="confirmed">Confirmé</SelectItem>
-                    <SelectItem value="cancelled">Annulé</SelectItem>
-                  </SelectContent>
-                </Select>
-              ) : (
-                // For new students, show read-only pending status
-                <div className="h-12 px-3 py-2 border border-gray-200 rounded-md bg-gray-50 flex items-center text-lg text-gray-600">
-                  En attente (automatique pour nouveaux élèves)
-                </div>
-              )}
+              {/* Always show read-only status - no user editing allowed */}
+              <div className="h-12 px-3 py-2 border border-gray-200 rounded-md bg-gray-50 flex items-center text-lg text-gray-600">
+                {student ? (
+                  // Show current status for existing students
+                  <>
+                    {formData.registration_status === "pending" && "En attente"}
+                    {formData.registration_status === "confirmed" && "Confirmé"}
+                    {formData.registration_status === "cancelled" && "Annulé"}
+                    {!formData.registration_status && "En attente"}
+                  </>
+                ) : (
+                  // For new students
+                  "En attente (automatique pour nouveaux élèves)"
+                )}
+              </div>
             </div>
 
             <Card className="bg-emerald-50 border-emerald-200">

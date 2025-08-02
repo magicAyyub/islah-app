@@ -85,6 +85,23 @@ class Payment(Base):
     notes = Column(String)
     processed_by = Column(Integer, ForeignKey('users.id'))  # Staff who processed payment
 
+class StudentFlag(Base):
+    __tablename__ = 'student_flags'
+    id = Column(Integer, primary_key=True, index=True)
+    student_id = Column(Integer, ForeignKey('students.id'), nullable=False)
+    flag_type = Column(String, nullable=False)  # "payment_issue", "bounced_check", "late_payment", "behavior", etc.
+    reason = Column(String, nullable=False)
+    flagged_date = Column(DateTime, default=datetime.now)
+    flagged_by = Column(Integer, ForeignKey('users.id'), nullable=False)
+    is_active = Column(Boolean, default=True)
+    resolved_date = Column(DateTime, nullable=True)
+    resolved_by = Column(Integer, ForeignKey('users.id'), nullable=True)
+    
+    # Relationships
+    student = relationship("Student", backref="flags")
+    flagged_by_user = relationship("User", foreign_keys=[flagged_by])
+    resolved_by_user = relationship("User", foreign_keys=[resolved_by])
+
 class User(Base):
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True, index=True)

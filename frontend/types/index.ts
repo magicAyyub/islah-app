@@ -28,6 +28,14 @@ export interface Class {
   academic_year: string
 }
 
+export interface StudentFlag {
+  id: number
+  flag_type: string
+  reason: string
+  flagged_date: string
+  is_active: boolean
+}
+
 export interface Student {
   id: number
   first_name: string
@@ -43,6 +51,7 @@ export interface Student {
   registered_by?: number
   parent?: Parent
   class?: Class
+  flags?: StudentFlag[]
 }
 
 export interface Payment {

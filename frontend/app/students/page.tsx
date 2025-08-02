@@ -13,6 +13,13 @@ import { StudentsFilters } from "@/components/students/students-filters"
 import { api } from "@/lib/api"
 import type { Student } from "@/types"
 
+interface StudentFilters {
+  class_id?: string
+  registration_status?: string
+  gender?: string
+  academic_year?: string
+}
+
 export default function StudentsPage() {
   const [students, setStudents] = useState<Student[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -23,11 +30,17 @@ export default function StudentsPage() {
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
   const [showFilters, setShowFilters] = useState(false)
+  const [filters, setFilters] = useState<StudentFilters>({})
+  const [stats, setStats] = useState({
+    newThisMonth: 0,
+    pending: 0,
+    presentToday: 0
+  })
 
-  const fetchStudents = async (page = 1, search = "") => {
+  const fetchStudents = async (page = 1, search = "", appliedFilters = filters) => {
     setIsLoading(true)
     try {
-      const response = await api.getStudents(page, 20, search)
+      const response = await api.getStudents(page, 20, search, appliedFilters)
       setStudents(response.items || [])
       setTotalPages(response.pages || 1)
       setTotalStudents(response.total || 0)
@@ -39,8 +52,28 @@ export default function StudentsPage() {
     }
   }
 
+  const handleFiltersChange = (newFilters: StudentFilters) => {
+    setFilters(newFilters)
+    setCurrentPage(1)
+    fetchStudents(1, searchTerm, newFilters)
+  }
+
+  const fetchStatistics = async () => {
+    try {
+      const statsResponse = await api.getStudentStatistics()
+      setStats({
+        newThisMonth: statsResponse.new_this_month,
+        pending: statsResponse.pending,
+        presentToday: statsResponse.present_today
+      })
+    } catch (error) {
+      console.error("Error fetching statistics:", error)
+    }
+  }
+
   useEffect(() => {
     fetchStudents(1, searchTerm)
+    fetchStatistics() // Fetch statistics efficiently
   }, [searchTerm])
 
   const handleSearch = (value: string) => {
@@ -64,14 +97,15 @@ export default function StudentsPage() {
 
   const handleStudentSaved = () => {
     fetchStudents(currentPage, searchTerm)
+    fetchStatistics() // Refresh stats when a student is added/updated
     setIsFormOpen(false)
   }
 
-  const quickStats = [
+    const quickStats = [
     { label: "Total élèves", value: totalStudents, icon: Users, color: "emerald" },
-    { label: "Nouveaux ce mois", value: 12, icon: UserPlus, color: "blue" },
-    { label: "En attente", value: 5, icon: FileText, color: "amber" },
-    { label: "Présents aujourd'hui", value: Math.floor(totalStudents * 0.94), icon: Calendar, color: "green" },
+    { label: "Nouveaux ce mois", value: stats.newThisMonth, icon: UserPlus, color: "blue" },
+    { label: "En attente", value: stats.pending, icon: FileText, color: "amber" },
+    { label: "Présents aujourd'hui", value: stats.presentToday, icon: Calendar, color: "green" },
   ]
 
   return (
@@ -189,7 +223,10 @@ export default function StudentsPage() {
                   exit={{ opacity: 0, height: 0 }}
                   className="mt-6 pt-6 border-t border-gray-200"
                 >
-                  <StudentsFilters />
+                  <StudentsFilters 
+                    filters={filters}
+                    onFiltersChange={handleFiltersChange}
+                  />
                 </motion.div>
               )}
             </CardContent>
@@ -204,12 +241,15 @@ export default function StudentsPage() {
                 <div>
                   <CardTitle className="text-xl">Liste des Élèves</CardTitle>
                   <CardDescription className="text-base mt-1">
-                    {totalStudents} élève{totalStudents !== 1 ? "s" : ""} inscrit{totalStudents !== 1 ? "s" : ""} à
-                    l'École Islah
+                    {totalStudents} élève{totalStudents !== 1 ? "s" : ""} 
+                    {searchTerm || Object.values(filters).some(value => value && value !== "all") 
+                      ? " trouvé" + (totalStudents !== 1 ? "s" : "")
+                      : " inscrit" + (totalStudents !== 1 ? "s" : "")} 
+                    à l'École Islah
                   </CardDescription>
                 </div>
                 <div className="text-sm text-gray-500">
-                  Page {currentPage} sur {totalPages}
+                  {totalStudents > 0 && `Page ${currentPage} sur ${totalPages}`}
                 </div>
               </div>
             </CardHeader>
@@ -221,6 +261,12 @@ export default function StudentsPage() {
                 totalPages={totalPages}
                 onPageChange={handlePageChange}
                 onEditStudent={handleEditStudent}
+                searchTerm={searchTerm}
+                hasActiveFilters={Object.values(filters).some(value => value && value !== "all")}
+                onRefresh={() => {
+                  fetchStudents(currentPage, searchTerm)
+                  fetchStatistics()
+                }}
               />
             </CardContent>
           </Card>

@@ -1,12 +1,54 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { RotateCcw } from "lucide-react"
+import { api } from "@/lib/api"
+import type { Class } from "@/types"
 
-export function StudentsFilters() {
+interface Filters {
+  class_id?: string
+  registration_status?: string
+  gender?: string
+  academic_year?: string
+}
+
+interface StudentsFiltersProps {
+  onFiltersChange: (filters: Filters) => void
+  filters: Filters
+}
+
+export function StudentsFilters({ onFiltersChange, filters }: StudentsFiltersProps) {
+  const [classes, setClasses] = useState<Class[]>([])
+
+  useEffect(() => {
+    fetchClasses()
+  }, [])
+
+  const fetchClasses = async () => {
+    try {
+      const classesRes = await api.getClasses()
+      setClasses(Array.isArray(classesRes) ? classesRes : [])
+    } catch (error) {
+      console.error("Error fetching classes:", error)
+      setClasses([])
+    }
+  }
+
+  const handleFilterChange = (key: keyof Filters, value: string) => {
+    const newFilters = {
+      ...filters,
+      [key]: value === "all" ? undefined : value
+    }
+    onFiltersChange(newFilters)
+  }
+
+  const handleReset = () => {
+    onFiltersChange({})
+  }
   return (
     <motion.div
       initial={{ opacity: 0, y: -10 }}
@@ -15,24 +57,30 @@ export function StudentsFilters() {
     >
       <div className="space-y-2">
         <Label className="text-sm font-medium">Classe</Label>
-        <Select>
+        <Select
+          value={filters.class_id || "all"}
+          onValueChange={(value) => handleFilterChange("class_id", value)}
+        >
           <SelectTrigger>
             <SelectValue placeholder="Toutes les classes" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Toutes les classes</SelectItem>
-            <SelectItem value="maternelle-1">Maternelle 1</SelectItem>
-            <SelectItem value="maternelle-2">Maternelle 2</SelectItem>
-            <SelectItem value="primaire-1">Primaire 1</SelectItem>
-            <SelectItem value="primaire-2">Primaire 2</SelectItem>
-            <SelectItem value="primaire-3">Primaire 3</SelectItem>
+            {classes.map((cls) => (
+              <SelectItem key={cls.id} value={cls.id.toString()}>
+                {cls.name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
 
       <div className="space-y-2">
         <Label className="text-sm font-medium">Statut</Label>
-        <Select>
+        <Select
+          value={filters.registration_status || "all"}
+          onValueChange={(value) => handleFilterChange("registration_status", value)}
+        >
           <SelectTrigger>
             <SelectValue placeholder="Tous les statuts" />
           </SelectTrigger>
@@ -47,7 +95,10 @@ export function StudentsFilters() {
 
       <div className="space-y-2">
         <Label className="text-sm font-medium">Genre</Label>
-        <Select>
+        <Select
+          value={filters.gender || "all"}
+          onValueChange={(value) => handleFilterChange("gender", value)}
+        >
           <SelectTrigger>
             <SelectValue placeholder="Tous" />
           </SelectTrigger>
@@ -61,11 +112,15 @@ export function StudentsFilters() {
 
       <div className="space-y-2">
         <Label className="text-sm font-medium">Année scolaire</Label>
-        <Select>
+        <Select
+          value={filters.academic_year || "all"}
+          onValueChange={(value) => handleFilterChange("academic_year", value)}
+        >
           <SelectTrigger>
-            <SelectValue placeholder="2024-2025" />
+            <SelectValue placeholder="Toutes" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="all">Toutes</SelectItem>
             <SelectItem value="2024-2025">2024-2025</SelectItem>
             <SelectItem value="2023-2024">2023-2024</SelectItem>
             <SelectItem value="2022-2023">2022-2023</SelectItem>
@@ -74,7 +129,7 @@ export function StudentsFilters() {
       </div>
 
       <div className="flex items-end">
-        <Button variant="outline" className="w-full bg-transparent">
+        <Button variant="outline" className="w-full bg-transparent" onClick={handleReset}>
           <RotateCcw className="w-4 h-4 mr-2" />
           Réinitialiser
         </Button>
