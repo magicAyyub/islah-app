@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Users, GraduationCap, CreditCard, Calendar, UserCheck } from "lucide-react"
@@ -11,7 +12,6 @@ import { StatsCard } from "@/components/dashboard/stats-card"
 import { RecentActivity } from "@/components/dashboard/recent-activity"
 import { QuickActions } from "@/components/dashboard/quick-actions"
 import { IslamicWelcome } from "@/components/dashboard/islamic-welcome"
-import { PrayerTimes } from "@/components/dashboard/prayer-times"
 import { IslamicQuote } from "@/components/dashboard/islamic-quote"
 
 interface DashboardStats {
@@ -22,7 +22,8 @@ interface DashboardStats {
 }
 
 export default function DashboardPage() {
-  const { user } = useAuth()
+  const router = useRouter()
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth()
   const [stats, setStats] = useState<DashboardStats>({
     totalStudents: 0,
     totalClasses: 0,
@@ -32,8 +33,18 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
+    // Redirect to login if not authenticated after auth check is complete
+    if (!authLoading && !isAuthenticated) {
+      router.push('/login')
+      return
+    }
+
+    // Only fetch data if authenticated
+    if (!isAuthenticated || authLoading) return
+
     const fetchDashboardData = async () => {
       try {
+        setIsLoading(true)
         // Simulate API calls - replace with actual API endpoints
         const [studentsRes, classesRes, paymentsRes] = await Promise.all([
           api.getStudents(1, 1), // Just to get total count
@@ -47,15 +58,55 @@ export default function DashboardPage() {
           totalPayments: paymentsRes.total || 0,
           attendanceRate: 94.5, // Mock data
         })
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching dashboard data:", error)
+        // If authentication error, redirect to login
+        if (error.message === "Authentication required" || error.message === "Not authenticated") {
+          router.push('/login')
+          return
+        }
+        // Otherwise, show fallback data
+        setStats({
+          totalStudents: 0,
+          totalClasses: 0,
+          totalPayments: 0,
+          attendanceRate: 0,
+        })
       } finally {
         setIsLoading(false)
       }
     }
 
     fetchDashboardData()
-  }, [])
+  }, [isAuthenticated, authLoading, router])
+
+  // Show loading while authentication is being checked
+  if (authLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Vérification de l'authentification...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  // Show loading while redirecting if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Redirection vers la page de connexion...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
+  }
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -116,18 +167,18 @@ export default function DashboardPage() {
             />
           </motion.div>
         </motion.div>
+        
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          {/* Quick Actions */}
+        <div className="grid grid-cols-1 xl:grid-cols-5 gap-10">
+          {/* Quick Actions - More space on larger screens */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3 }}
-            className="lg:col-span-1 space-y-6"
+            className="xl:col-span-2 space-y-6"
           >
             <QuickActions userRole={user?.role} />
-            <PrayerTimes />
           </motion.div>
 
           {/* Recent Activity */}
@@ -135,7 +186,7 @@ export default function DashboardPage() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.4 }}
-            className="lg:col-span-2 space-y-6"
+            className="xl:col-span-3 space-y-6"
           >
             <RecentActivity />
             <IslamicQuote />

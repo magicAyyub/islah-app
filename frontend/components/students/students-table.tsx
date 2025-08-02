@@ -25,6 +25,7 @@ interface StudentsTableProps {
   totalPages: number
   onPageChange: (page: number) => void
   onEditStudent: (student: Student) => void
+  onViewProfile: (student: Student) => void
   searchTerm?: string
   hasActiveFilters?: boolean
   onRefresh?: () => void
@@ -37,6 +38,7 @@ export function StudentsTable({
   totalPages,
   onPageChange,
   onEditStudent,
+  onViewProfile,
   searchTerm = "",
   hasActiveFilters = false,
   onRefresh,
@@ -262,7 +264,7 @@ export function StudentsTable({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56">
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onViewProfile(student)}>
                         <Eye className="w-4 h-4 mr-2" />
                         Voir le profil
                       </DropdownMenuItem>

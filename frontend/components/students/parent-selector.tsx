@@ -63,11 +63,13 @@ export function ParentSelector({
   const fetchParents = async () => {
     setIsLoading(true)
     try {
-      const response = await api.getParents()
-      setParents(response || [])
-      setFilteredParents(response || [])
+      const response = await api.getParents("")
+      setParents(Array.isArray(response) ? response : [])
+      setFilteredParents(Array.isArray(response) ? response : [])
     } catch (error) {
       console.error("Error fetching parents:", error)
+      setParents([])
+      setFilteredParents([])
     } finally {
       setIsLoading(false)
     }

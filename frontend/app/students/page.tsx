@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { motion } from "framer-motion"
 import { Plus, Search, Filter, Download, Users, UserPlus, FileText, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -10,6 +11,7 @@ import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { StudentsTable } from "@/components/students/students-table"
 import { StudentFormDialog } from "@/components/students/student-form-dialog"
 import { StudentsFilters } from "@/components/students/students-filters"
+import { StudentProfile } from "@/components/students/student-profile"
 import { api } from "@/lib/api"
 import type { Student } from "@/types"
 
@@ -21,6 +23,7 @@ interface StudentFilters {
 }
 
 export default function StudentsPage() {
+  const searchParams = useSearchParams()
   const [students, setStudents] = useState<Student[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
@@ -31,11 +34,25 @@ export default function StudentsPage() {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
   const [showFilters, setShowFilters] = useState(false)
   const [filters, setFilters] = useState<StudentFilters>({})
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [profileStudentId, setProfileStudentId] = useState<number | null>(null)
   const [stats, setStats] = useState({
     newThisMonth: 0,
     pending: 0,
     presentToday: 0
   })
+
+  // Handle URL parameters
+  useEffect(() => {
+    const viewStudentId = searchParams?.get('view')
+    if (viewStudentId) {
+      const studentId = parseInt(viewStudentId)
+      if (!isNaN(studentId)) {
+        setProfileStudentId(studentId)
+        setIsProfileOpen(true)
+      }
+    }
+  }, [searchParams])
 
   const fetchStudents = async (page = 1, search = "", appliedFilters = filters) => {
     setIsLoading(true)
@@ -93,6 +110,11 @@ export default function StudentsPage() {
   const handleEditStudent = (student: Student) => {
     setSelectedStudent(student)
     setIsFormOpen(true)
+  }
+
+  const handleViewProfile = (student: Student) => {
+    setProfileStudentId(student.id)
+    setIsProfileOpen(true)
   }
 
   const handleStudentSaved = () => {
@@ -261,6 +283,7 @@ export default function StudentsPage() {
                 totalPages={totalPages}
                 onPageChange={handlePageChange}
                 onEditStudent={handleEditStudent}
+                onViewProfile={handleViewProfile}
                 searchTerm={searchTerm}
                 hasActiveFilters={Object.values(filters).some(value => value && value !== "all")}
                 onRefresh={() => {
@@ -279,6 +302,23 @@ export default function StudentsPage() {
           student={selectedStudent}
           onSave={handleStudentSaved}
         />
+
+        {/* Student Profile Dialog */}
+        {profileStudentId && (
+          <StudentProfile
+            studentId={profileStudentId}
+            isOpen={isProfileOpen}
+            onClose={() => {
+              setIsProfileOpen(false)
+              setProfileStudentId(null)
+            }}
+            onEdit={(student) => {
+              setIsProfileOpen(false)
+              setProfileStudentId(null)
+              handleEditStudent(student)
+            }}
+          />
+        )}
       </div>
     </DashboardLayout>
   )

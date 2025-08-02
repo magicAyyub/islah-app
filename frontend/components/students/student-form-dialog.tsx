@@ -109,9 +109,20 @@ export function StudentFormDialog({ isOpen, onClose, student, onSave }: StudentF
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Only allow submission on the last step
+    if (currentStep !== steps.length) {
+      return
+    }
+    
     setIsLoading(true)
 
     try {
+      // Validate required fields
+      if (!formData.first_name.trim() || !formData.last_name.trim() || !formData.date_of_birth || !formData.gender) {
+        throw new Error("Veuillez remplir tous les champs obligatoires")
+      }
+
       const data = {
         ...formData,
         parent_id: formData.parent_id ? Number.parseInt(formData.parent_id) : null,
@@ -129,6 +140,17 @@ export function StudentFormDialog({ isOpen, onClose, student, onSave }: StudentF
       console.error("Error saving student:", error)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Prevent form submission on Enter key unless on the last step
+    if (e.key === 'Enter' && currentStep !== steps.length) {
+      e.preventDefault()
+      // If we can proceed to next step, do it
+      if (canProceedToNextStep()) {
+        nextStep()
+      }
     }
   }
 
@@ -413,7 +435,7 @@ export function StudentFormDialog({ isOpen, onClose, student, onSave }: StudentF
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="flex-1 flex flex-col">
+            <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="flex-1 flex flex-col">
               <div className="flex-1 p-6 overflow-y-auto">
                 <AnimatePresence mode="wait">
                   <motion.div

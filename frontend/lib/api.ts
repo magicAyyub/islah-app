@@ -43,6 +43,23 @@ class SchoolAPI {
     return this.apiCall("/auth/me")
   }
 
+  // Quick Search - for dashboard search
+  async quickSearchStudents(search: string, limit: number = 5) {
+    const params = new URLSearchParams({
+      search,
+      limit: limit.toString()
+    })
+    return this.apiCall(`/quick-search/students?${params}`)
+  }
+
+  async quickSearchParents(search: string, limit: number = 5) {
+    const params = new URLSearchParams({
+      search,
+      limit: limit.toString()
+    })
+    return this.apiCall(`/quick-search/parents?${params}`)
+  }
+
   // Students
   async getStudents(page = 1, size = 20, search = "", filters: Record<string, any> = {}) {
     const params = new URLSearchParams({
@@ -107,8 +124,13 @@ class SchoolAPI {
   }
 
   // Parents
-  async getParents() {
-    return this.apiCall("/parents/")
+  async getParents(search: string = "") {
+    const params = new URLSearchParams()
+    if (search) {
+      params.append("search", search)
+    }
+    const queryString = params.toString()
+    return this.apiCall(`/parents/${queryString ? `?${queryString}` : ""}`)
   }
 
   async createParent(parentData: any) {

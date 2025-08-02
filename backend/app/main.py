@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.endpoints import students, payments, registrations, classes, parents, auth, academic, stats
+from app.api.endpoints import students, payments, registrations, classes, parents, auth, academic, stats, quick_search
 
 app = FastAPI(
     title="Islah School Management System",
@@ -25,6 +25,7 @@ app.include_router(registrations.router, prefix="/registrations", tags=["registr
 app.include_router(classes.router, prefix="/classes", tags=["classes"])
 app.include_router(academic.router, prefix="/academic", tags=["academic"])
 app.include_router(stats.router, prefix="/stats", tags=["statistics"])
+app.include_router(quick_search.router, prefix="/quick-search", tags=["quick-search"])
 
 @app.get("/")
 def read_root():
